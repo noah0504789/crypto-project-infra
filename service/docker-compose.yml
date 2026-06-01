@@ -22,6 +22,7 @@ services:
     networks: [crypto-project-network]
 
   crypto-spring-cloud-api-gateway:
+    profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-spring-cloud-api-gateway:${API_GATEWAY_IMAGE_TAG:-latest}
     container_name: crypto-spring-cloud-api-gateway
     ports: ["8000:8000"]
@@ -33,6 +34,7 @@ services:
     networks: [crypto-project-network]
 
   crypto-websocket-gateway:
+    profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-websocket-gateway:${WEBSOCKET_GATEWAY_IMAGE_TAG:-latest}
     ports: ["8100:8100"]
     environment:
@@ -41,6 +43,7 @@ services:
     networks: [crypto-project-network]
 
   crypto-oauth2-authorization-server:
+    profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-oauth2-authorization-server:${OAUTH2_AUTHORIZATION_SERVER_IMAGE_TAG:-latest}
     container_name: crypto-oauth2-authorization-server
     ports: ["9000:9000"]
@@ -50,6 +53,7 @@ services:
     networks: [crypto-project-network]
 
   crypto-oauth2-client:
+    profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-oauth2-client:${OAUTH2_CLIENT_IMAGE_TAG:-latest}
     container_name: crypto-oauth2-client
     ports: ["8900:8900"]
@@ -59,6 +63,7 @@ services:
     networks: [crypto-project-network]
 
   crypto-user-service:
+    profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-user-service:${USER_SERVICE_IMAGE_TAG:-latest}
     container_name: crypto-user-service
     ports: ["8090:8090"]
@@ -68,6 +73,7 @@ services:
     networks: [crypto-project-network]
 
   crypto-chat-service:
+    profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-chat-service:${CHAT_SERVICE_IMAGE_TAG:-latest}
     ports: ["8080:8080"]
     environment:
