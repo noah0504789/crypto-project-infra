@@ -22,7 +22,6 @@ services:
     networks: [crypto-project-network]
 
   crypto-spring-cloud-api-gateway:
-    profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-spring-cloud-api-gateway:${API_GATEWAY_IMAGE_TAG:-latest}
     container_name: crypto-spring-cloud-api-gateway
     ports: ["8000:8000"]
@@ -36,6 +35,7 @@ services:
   crypto-websocket-gateway:
     profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-websocket-gateway:${WEBSOCKET_GATEWAY_IMAGE_TAG:-latest}
+    container_name: crypto-websocket-gateway
     ports: ["8100:8100"]
     environment:
       JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m"
@@ -75,6 +75,7 @@ services:
   crypto-chat-service:
     profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-chat-service:${CHAT_SERVICE_IMAGE_TAG:-latest}
+    container_name: crypto-chat-service
     ports: ["8080:8080"]
     environment:
       JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=256m"
