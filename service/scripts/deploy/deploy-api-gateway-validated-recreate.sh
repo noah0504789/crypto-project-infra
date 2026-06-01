@@ -19,6 +19,9 @@ HEALTH_SCHEME="${HEALTH_SCHEME:-https}"
 HEALTH_PATH="${HEALTH_PATH:-/actuator/health/liveness}"
 CURL_INSECURE="${CURL_INSECURE:-true}"
 
+DEPLOYMENT_BASE_PATH="${DEPLOYMENT_BASE_PATH:-/internal/deployment}"
+DEPLOY_TOKEN="${DEPLOY_TOKEN:-}"
+
 JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-"-Xms256m -Xmx584m -Dreactor.netty.ioWorkerCount=8"}"
 MEM_LIMIT="${MEM_LIMIT:-768m}"
 
@@ -31,14 +34,19 @@ log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
 }
 
+curl_base_opts() {
+  if [[ "$CURL_INSECURE" == "true" ]]; then
+    echo "-kfsS"
+  else
+    echo "-fsS"
+  fi
+}
+
 wait_for_health() {
   local port="$1"
   local url="${HEALTH_SCHEME}://localhost:${port}${HEALTH_PATH}"
-  local curl_opts="-fsS"
-
-  if [[ "$CURL_INSECURE" == "true" ]]; then
-    curl_opts="-kfsS"
-  fi
+  local curl_opts
+  curl_opts="$(curl_base_opts)"
 
   for attempt in {1..40}; do
     if curl $curl_opts "$url" >/dev/null 2>&1; then
@@ -52,6 +60,34 @@ wait_for_health() {
 
   log "ERROR: health check failed: $url"
   return 1
+}
+
+deployment_post() {
+  local port="$1"
+  local action="$2"
+  local url="${HEALTH_SCHEME}://localhost:${port}${DEPLOYMENT_BASE_PATH}/${action}"
+  local curl_opts
+  curl_opts="$(curl_base_opts)"
+
+  if [[ -z "$DEPLOY_TOKEN" ]]; then
+    log "DEPLOY_TOKEN is empty. Skipping deployment action: $url"
+    return 0
+  fi
+
+  if curl $curl_opts -X POST \
+    -H "X-Deploy-Token: ${DEPLOY_TOKEN}" \
+    "$url" >/dev/null; then
+    log "Deployment action success: $url"
+    return 0
+  fi
+
+  log "Deployment action failed: $url"
+  return 1
+}
+
+mark_ready() {
+  local port="$1"
+  deployment_post "$port" "ready"
 }
 
 remove_container() {
@@ -100,6 +136,7 @@ run_gateway_container() {
 
   docker run -d \
     --name "$name" \
+    --hostname "$name" \
     --network "$DOCKER_NETWORK" \
     --memory "$MEM_LIMIT" \
     --label "app=${SERVICE}" \
@@ -138,6 +175,12 @@ rollback() {
     return 1
   fi
 
+  if ! mark_ready "$PUBLIC_PORT"; then
+    log "ERROR: rollback container failed to mark ready."
+    docker logs --tail=150 "$SERVICE" || true
+    return 1
+  fi
+
   log "Rollback success."
 }
 
@@ -150,6 +193,7 @@ main() {
   log "public port    : $PUBLIC_PORT"
   log "candidate port : $CANDIDATE_PORT"
   log "health url     : ${HEALTH_SCHEME}://localhost:<port>${HEALTH_PATH}"
+  log "deploy url     : ${HEALTH_SCHEME}://localhost:<port>${DEPLOYMENT_BASE_PATH}/ready"
   log "curl insecure  : $CURL_INSECURE"
   log "========================================"
 
@@ -208,7 +252,23 @@ main() {
     exit 1
   fi
 
-  log "New public API Gateway is healthy."
+  if ! mark_ready "$PUBLIC_PORT"; then
+    log "ERROR: new public API Gateway failed to mark ready."
+    log "New public container logs:"
+    docker logs --tail=150 "$SERVICE" || true
+
+    log "Trying rollback..."
+    if ! rollback; then
+      log "ERROR: rollback failed. Manual intervention required."
+      remove_container "$CANDIDATE_SERVICE"
+      exit 1
+    fi
+
+    remove_container "$CANDIDATE_SERVICE"
+    exit 1
+  fi
+
+  log "New public API Gateway is healthy and ready."
 
   local current_digest
   current_digest="$(resolve_running_image_digest "$SERVICE")"
