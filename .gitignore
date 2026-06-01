@@ -1,0 +1,24 @@
+# env
+.env
+*.env
+!.env.example
+
+# runtime deploy state
+.deploy/
+**/.deploy/
+
+# certificates / secrets
+service/certs/*.p12
+service/certs/*.jks
+service/certs/*.key
+service/certs/*.crt
+service/certs/*.pem
+infra/mongo/mongo-keyfile
+
+# keep dirs
+!service/certs/.gitkeep
+
+# local
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,88 @@
+services:
+  crypto-spring-cloud-config:
+    image: ${DOCKERHUB_USERNAME}/crypto-spring-cloud-config:${CONFIG_SERVER_IMAGE_TAG:-latest}
+    container_name: crypto-spring-cloud-config
+    ports: ["8888:8888"]
+    environment:
+      CONFIG_REPO_URI: https://github.com/noah0504789/crypto-project-backend.git
+      CONFIG_REPO_SEARCH_PATHS: git-config-repo
+      VAULT_ROLE_ID: ${VAULT_ROLE_ID}
+      VAULT_SECRET_ID: ${VAULT_SECRET_ID}
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m"
+    mem_limit: 512m
+    networks: [crypto-project-network]
+
+  crypto-spring-cloud-eureka-server:
+    image: ${DOCKERHUB_USERNAME}/crypto-spring-cloud-eureka-server:${EUREKA_SERVER_IMAGE_TAG:-latest}
+    container_name: crypto-spring-cloud-eureka-server
+    ports: ["8761:8761"]
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m"
+    mem_limit: 512m
+    networks: [crypto-project-network]
+
+  crypto-spring-cloud-api-gateway:
+    image: ${DOCKERHUB_USERNAME}/crypto-spring-cloud-api-gateway:${API_GATEWAY_IMAGE_TAG:-latest}
+    container_name: crypto-spring-cloud-api-gateway
+    ports: ["8000:8000"]
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx584m -Dreactor.netty.ioWorkerCount=8"
+    mem_limit: 768m
+    volumes:
+      - ./certs/keystore.p12:/certs/keystore.p12:ro
+    networks: [crypto-project-network]
+
+  crypto-websocket-gateway:
+    image: ${DOCKERHUB_USERNAME}/crypto-websocket-gateway:${WEBSOCKET_GATEWAY_IMAGE_TAG:-latest}
+    ports: ["8100:8100"]
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m"
+    mem_limit: 768m
+    networks: [crypto-project-network]
+
+  crypto-oauth2-authorization-server:
+    image: ${DOCKERHUB_USERNAME}/crypto-oauth2-authorization-server:${OAUTH2_AUTHORIZATION_SERVER_IMAGE_TAG:-latest}
+    container_name: crypto-oauth2-authorization-server
+    ports: ["9000:9000"]
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx384m"
+    mem_limit: 768m
+    networks: [crypto-project-network]
+
+  crypto-oauth2-client:
+    image: ${DOCKERHUB_USERNAME}/crypto-oauth2-client:${OAUTH2_CLIENT_IMAGE_TAG:-latest}
+    container_name: crypto-oauth2-client
+    ports: ["8900:8900"]
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m"
+    mem_limit: 768m
+    networks: [crypto-project-network]
+
+  crypto-user-service:
+    image: ${DOCKERHUB_USERNAME}/crypto-user-service:${USER_SERVICE_IMAGE_TAG:-latest}
+    container_name: crypto-user-service
+    ports: ["8090:8090"]
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m"
+    mem_limit: 512m
+    networks: [crypto-project-network]
+
+  crypto-chat-service:
+    image: ${DOCKERHUB_USERNAME}/crypto-chat-service:${CHAT_SERVICE_IMAGE_TAG:-latest}
+    ports: ["8080:8080"]
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=256m"
+    mem_limit: 1024m
+    networks: [crypto-project-network]
+
+  crypto-outbox-poller:
+    image: ${OUTBOX_POLLER_IMAGE:-${DOCKERHUB_USERNAME}/crypto-outbox-poller:${OUTBOX_POLLER_IMAGE_TAG:-latest}}
+    container_name: crypto-outbox-poller
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m"
+    mem_limit: 768m
+    networks: [crypto-project-network]
+
+networks:
+  crypto-project-network:
+    external: true

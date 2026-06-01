@@ -1,0 +1,84 @@
+global:
+  scrape_interval: 10s
+  scrape_timeout: 5s
+
+scrape_configs:
+  - job_name: 'node'
+    static_configs:
+      - targets: 
+          - 'node-exporter:9100'
+        labels:
+          group: 'infra'
+
+  - job_name: 'mysql'
+    static_configs:
+      - targets: 
+          - 'mysql-primary-exporter:9104'
+          - 'mysql-replica-exporter:9104'
+        labels:
+          group: 'infra'
+
+  - job_name: 'redis-cluster'
+    static_configs:
+      - targets:
+          - 'redis-exporter-0:9121'
+          - 'redis-exporter-1:9121'
+          - 'redis-exporter-2:9121'
+          - 'redis-exporter-3:9121'
+          - 'redis-exporter-4:9121'
+          - 'redis-exporter-5:9121'          
+        labels: { group: 'infra' }
+
+  - job_name: 'mongo'
+    static_configs:
+      - targets: 
+          - 'mongodb-exporter-primary:9216'
+          # - 'mongodb-exporter-secondary-0:9216'
+          # - 'mongodb-exporter-secondary-1:9216'
+        labels:
+          group: 'infra'
+
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka-exporter:9308']
+        labels:
+          group: 'infra'   
+          
+  # - job_name: 'otel-collector'
+  #   static_configs:
+  #     - targets: ['otel-collector:8888']
+  #       labels: { group: 'infra' }
+
+  # - job_name: 'tempo'
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ['tempo:3200']
+  #       labels: { group: 'infra' }
+
+  - job_name: 'crypto-chat-service'
+    metrics_path: /api/v1/actuator/prometheus
+    static_configs:
+      - targets: ['crypto-chat-service:8080']
+        labels:
+          group: 'service'   
+          service: 'chat-service'
+
+  # - job_name: 'crypto-outbox-poller'
+  #   metrics_path: /actuator/prometheus
+  #   static_configs:
+  #     - targets: ['crypto-outbox-poller:9200']
+  #       labels:
+  #         group: 'service'   
+  #         service: 'outbox-poller'
+
+  - job_name: 'crypto-websocket-gateway'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - 'crypto-websocket-gateway-0:8100'
+          - 'crypto-websocket-gateway-1:8100'
+        labels:
+          group: 'service'
+          service: 'websocket-service'
+# rule_files:
+#   - '/etc/prometheus/prometheus.rules.yml'

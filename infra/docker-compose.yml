@@ -1,0 +1,291 @@
+services:
+  mysql-primary:
+    image: mysql:8.4
+    container_name: mysql-primary
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    ports: ["3306:3306"]
+    volumes:
+      - mysql-primary-data:/var/lib/mysql
+      - ./mysql/mysql-primary.cnf:/etc/mysql/conf.d/mysql.cnf
+      - ./mysql/mysql-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    networks: [crypto-project-network]
+
+  mysql-replica:
+    image: mysql:8.4
+    container_name: mysql-replica
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    ports: ["3307:3306"]
+    volumes:
+      - mysql-replica-data:/var/lib/mysql
+      - ./mysql/mysql-replica.cnf:/etc/mysql/conf.d/mysql.cnf
+    networks: [crypto-project-network]
+
+  redis-0:
+    image: redis:7.2-alpine
+    container_name: redis-0
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports: ["7100:7100", "17100:17100"]
+    volumes:
+      - redis-0-data:/data
+      - ./redis/7100.conf:/usr/local/etc/redis/redis.conf:ro
+    networks: ["crypto-project-network"]
+
+  redis-1:
+    image: redis:7.2-alpine
+    container_name: redis-1
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports: ["7101:7101", "17101:17101"]
+    volumes:
+      - redis-1-data:/data
+      - ./redis/7101.conf:/usr/local/etc/redis/redis.conf:ro
+    networks: ["crypto-project-network"]
+
+  redis-2:
+    image: redis:7.2-alpine
+    container_name: redis-2
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports: ["7102:7102", "17102:17102"]
+    volumes:
+      - redis-2-data:/data
+      - ./redis/7102.conf:/usr/local/etc/redis/redis.conf:ro
+    networks: ["crypto-project-network"]
+
+  redis-3:
+    image: redis:7.2-alpine
+    container_name: redis-3
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports: ["7103:7103", "17103:17103"]
+    volumes:
+      - redis-3-data:/data
+      - ./redis/7103.conf:/usr/local/etc/redis/redis.conf:ro
+    networks: ["crypto-project-network"]
+
+  redis-4:
+    image: redis:7.2-alpine
+    container_name: redis-4
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports: ["7104:7104", "17104:17104"]
+    volumes:
+      - redis-4-data:/data
+      - ./redis/7104.conf:/usr/local/etc/redis/redis.conf:ro
+    networks: ["crypto-project-network"]
+
+  redis-5:
+    image: redis:7.2-alpine
+    container_name: redis-5
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports: ["7105:7105", "17105:17105"]
+    volumes:
+      - redis-5-data:/data
+      - ./redis/7105.conf:/usr/local/etc/redis/redis.conf:ro
+    networks: ["crypto-project-network"]
+    
+  mongo-primary:
+    image: mongo:6.0
+    container_name: mongo-primary
+    ports: ["27017:27017"]
+    volumes:
+      - mongo-primary-data:/data/db
+      - ./mongo/mongod.conf:/etc/mongod.conf:ro
+      - ./mongo/mongo-keyfile:/etc/mongo-keyfile:ro
+      - ./mongo/mongo-user.js:/docker-entrypoint-initdb.d/00-user.js:ro
+      - ./mongo/mongo-replica.js:/docker-entrypoint-initdb.d/01-replica.js:ro
+    command: ["--config", "/etc/mongod.conf"]
+    networks: [crypto-project-network]
+
+  mongo-secondary-0:
+    image: mongo:6.0
+    container_name: mongo-secondary-0
+    ports: ["27018:27017"]
+    volumes:
+      - mongo-secondary0-data:/data/db
+      - ./mongo/mongod.conf:/etc/mongod.conf:ro
+      - ./mongo/mongo-keyfile:/etc/mongo-keyfile:ro
+    command: ["--config", "/etc/mongod.conf"]    
+    networks: [crypto-project-network]
+
+  mongo-secondary-1:
+    image: mongo:6.0
+    container_name: mongo-secondary-1
+    ports: ["27019:27017"]
+    volumes:
+      - mongo-secondary1-data:/data/db  
+      - ./mongo/mongod.conf:/etc/mongod.conf:ro
+      - ./mongo/mongo-keyfile:/etc/mongo-keyfile:ro
+    command: ["--config", "/etc/mongod.conf"]    
+    networks: [crypto-project-network]
+
+  kafka-0:
+    image: apache/kafka:3.7.0
+    restart: unless-stopped
+    container_name: kafka-0
+    ports: ["10000:9094"]
+    environment:
+      KAFKA_NODE_ID: 0
+      KAFKA_BROKER_ID: 0
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 0@kafka-0:9093,1@kafka-1:9093
+
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-0:9092,EXTERNAL://localhost:10000
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_TRANSACTION_STATE_LOG_NUM_PARTITIONS: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_LEADER_REBALANCE_ENABLE: "true"
+      KAFKA_LEADER_IMBALANCE_CHECK_INTERVAL_SECONDS: 300
+      KAFKA_LEADER_IMBALANCE_PER_BROKER_PERCENTAGE: 10
+
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+
+      CLUSTER_ID: HsDBs9l6UUmQq7Y5E6bNlw
+    volumes:
+      - kafka-0-data:/var/lib/kafka/data
+    mem_limit: 768m
+    networks: ["crypto-project-network"]
+
+  kafka-1:
+    image: apache/kafka:3.7.0
+    restart: unless-stopped
+    container_name: kafka-1
+    ports: ["10001:9094"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_BROKER_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 0@kafka-0:9093,1@kafka-1:9093
+
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,EXTERNAL://localhost:10001
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_TRANSACTION_STATE_LOG_NUM_PARTITIONS: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_LEADER_REBALANCE_ENABLE: "true"
+      KAFKA_LEADER_IMBALANCE_CHECK_INTERVAL_SECONDS: 300
+      KAFKA_LEADER_IMBALANCE_PER_BROKER_PERCENTAGE: 10
+
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+
+      CLUSTER_ID: HsDBs9l6UUmQq7Y5E6bNlw
+    volumes:
+      - kafka-1-data:/var/lib/kafka/data
+    mem_limit: 768m
+    networks: ["crypto-project-network"]
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    restart: unless-stopped
+    container_name: kafka-ui
+    ports: ["9090:8080"]
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=Local-Kraft-Cluster
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka-0:9092,kafka-1:9092
+      - DYNAMIC_CONFIG_ENABLED=true
+    depends_on:
+      - kafka-0
+      - kafka-1
+    mem_limit: 256m
+    cpus: 0.50
+    networks: ["crypto-project-network"]  
+
+  vault:
+      image: hashicorp/vault:latest
+      container_name: vault
+      ports: ["18200:18200"]
+      user: "0:0"
+      entrypoint:
+        - /bin/sh
+        - -ec
+        - |
+          chown -R 100:100 /vault/data
+          chmod -R 700 /vault/data
+          exec vault server -config=/vault/config/vault.hcl
+      cap_add: ["IPC_LOCK"]    
+      volumes:
+        - vault-data:/vault/data
+        - ./vault/vault.hcl:/vault/config/vault.hcl:ro
+      networks: [crypto-project-network]      
+
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    restart: unless-stopped
+    ports: ["20080:8080"]
+    mem_limit: 256m
+    cpus: 0.50
+    networks: ["crypto-project-network"]
+
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: redis-insight
+    restart: unless-stopped
+    ports: ["20082:5540"]
+    mem_limit: 256m
+    cpus: 1.00
+    networks: ["crypto-project-network"]
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    restart: unless-stopped
+    ports: ["20081:8081"]
+    environment:
+      ME_CONFIG_MONGODB_SERVER: ${MONGO_EXPRESS_SERVER}
+      ME_CONFIG_MONGODB_PORT: ${MONGO_EXPRESS_PORT}
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: ${MONGO_EXPRESS_ENABLE_ADMIN}
+      ME_CONFIG_MONGODB_AUTH_DATABASE: ${MONGO_EXPRESS_AUTH_DATABASE}
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_EXPRESS_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_EXPRESS_PASSWORD}
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      - mongo-primary
+    mem_limit: 256m
+    cpus: 0.75
+    networks: ["crypto-project-network"]
+
+networks:
+  crypto-project-network:
+    external: true
+
+volumes:
+  mysql-primary-data:
+    external: true
+  mysql-replica-data:
+    external: true
+  redis-0-data:
+    external: true
+  redis-1-data:
+    external: true
+  redis-2-data:
+    external: true
+  redis-3-data:
+    external: true
+  redis-4-data:
+    external: true
+  redis-5-data:
+    external: true
+  mongo-primary-data:
+    external: true
+  mongo-secondary0-data:
+    external: true
+  mongo-secondary1-data:
+    external: true
+  kafka-0-data:
+    external: true
+  kafka-1-data:
+    external: true
+  vault-data:
+    external: true

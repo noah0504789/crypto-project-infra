@@ -1,0 +1,13 @@
+[mysqld]
+default-time-zone = '+00:00'
+character-set-server = utf8mb4
+collation-server = utf8mb4_0900_ai_ci
+
+server-id = 2
+gtid_mode = ON
+enforce_gtid_consistency = ON
+log_bin = mysql-bin
+log_replica_updates = ON
+read_only = ON
+super_read_only = ON
+bind-address = 0.0.0.0
