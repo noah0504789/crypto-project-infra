@@ -17,7 +17,9 @@ MEM_LIMIT="512m"
 
 DEFAULT_SCALE="${DEFAULT_SCALE:-1}"
 
-HEALTH_PATH="/api/v1/actuator/health"
+# Use liveness for boot check.
+# /actuator/health and /actuator/health/readiness return 503 before deployment ready is approved.
+HEALTH_PATH="/api/v1/actuator/health/liveness"
 DEPLOYMENT_BASE_PATH="/api/v1/internal/deployment"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
