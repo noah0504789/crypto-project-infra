@@ -190,11 +190,15 @@ deployment_post() {
     return 0
   fi
 
-  curl -fsS -X POST \
+  if curl -fsS -X POST \
     -H "X-Deploy-Token: ${DEPLOY_TOKEN}" \
-    "$url" >/dev/null
+    "$url" >/dev/null; then
+    log "Deployment action success: $url"
+    return 0
+  fi
 
-  log "Deployment action success: $url"
+  log "Deployment action failed: $url"
+  return 1
 }
 
 mark_slot_ready() {
