@@ -15,7 +15,7 @@ GREEN_PORT_START="8290"
 JAVA_TOOL_OPTIONS="-Xms128m -Xmx256m"
 MEM_LIMIT="512m"
 
-DEFAULT_SCALE="${DEFAULT_SCALE:-1}"
+TARGET_SCALE="${TARGET_SCALE:?TARGET_SCALE is required}"
 
 # Use liveness for boot check.
 # /actuator/health and /actuator/health/readiness return 503 before deployment ready is approved.
@@ -31,7 +31,7 @@ export BLUE_PORT_START
 export GREEN_PORT_START
 export JAVA_TOOL_OPTIONS
 export MEM_LIMIT
-export DEFAULT_SCALE
+export TARGET_SCALE
 export HEALTH_PATH
 export DEPLOYMENT_BASE_PATH
 

@@ -8,12 +8,12 @@ set -euo pipefail
 : "${GREEN_PORT_START:?GREEN_PORT_START is required}"
 : "${JAVA_TOOL_OPTIONS:?JAVA_TOOL_OPTIONS is required}"
 : "${MEM_LIMIT:?MEM_LIMIT is required}"
+: "${TARGET_SCALE:?TARGET_SCALE is required}"
 
 IMAGE_TAG="${1:-latest}"
 IMAGE="${IMAGE_REPOSITORY}:${IMAGE_TAG}"
 
 DOCKER_NETWORK="${DOCKER_NETWORK:-crypto-project-network}"
-DEFAULT_SCALE="${DEFAULT_SCALE:-1}"
 HEALTH_PATH="${HEALTH_PATH:-/api/v1/actuator/health}"
 DEPLOYMENT_BASE_PATH="${DEPLOYMENT_BASE_PATH:-/api/v1/internal/deployment}"
 DEPLOY_TOKEN="${DEPLOY_TOKEN:-}"
@@ -102,18 +102,31 @@ running_scale() {
   local slot="$1"
 
   if [[ "$slot" == "none" ]]; then
-    echo "$DEFAULT_SCALE"
+    echo "0"
     return
   fi
 
   local count
   count="$(docker ps --filter "name=^/${SERVICE_NAME}-${slot}-" --format '{{.Names}}' | wc -l | tr -d ' ')"
 
-  if [[ "$count" -eq 0 ]]; then
-    echo "$DEFAULT_SCALE"
+  echo "$count"
+}
+
+resolve_target_scale() {
+  local active_slot="$1"
+  local resolved_scale
+
+  if [[ "$TARGET_SCALE" == "current" ]]; then
+    resolved_scale="$(running_scale "$active_slot")"
+
+    if [[ "$resolved_scale" -lt 1 ]]; then
+      resolved_scale="1"
+    fi
   else
-    echo "$count"
+    resolved_scale="$TARGET_SCALE"
   fi
+
+  echo "$resolved_scale"
 }
 
 validate_scale() {
@@ -218,7 +231,7 @@ mark_slot_not_ready() {
   local scale="$2"
   local port_start
 
-  if [[ "$slot" == "none" ]]; then
+  if [[ "$slot" == "none" || "$scale" -lt 1 ]]; then
     return 0
   fi
 
@@ -285,6 +298,7 @@ main() {
   log "network       : $DOCKER_NETWORK"
   log "container port: $CONTAINER_PORT"
   log "health path   : $HEALTH_PATH"
+  log "target scale  : $TARGET_SCALE"
   log "========================================"
 
   local active_slot
@@ -300,15 +314,16 @@ main() {
     next_slot="$(opposite_slot "$active_slot")"
   fi
 
-  target_scale="$(running_scale "$active_slot")"
+  target_scale="$(resolve_target_scale "$active_slot")"
+
   validate_scale "$target_scale"
   validate_port_ranges "$target_scale"
 
   next_port_start="$(slot_port_start "$next_slot")"
 
-  log "active slot : $active_slot"
-  log "next slot   : $next_slot"
-  log "scale       : $target_scale"
+  log "active slot    : $active_slot"
+  log "next slot      : $next_slot"
+  log "resolved scale : $target_scale"
 
   log "Pulling image: $IMAGE"
   docker pull "$IMAGE"
@@ -354,6 +369,7 @@ main() {
 
   log "Deploy success."
   log "active slot updated: $next_slot"
+
   docker ps \
     --filter "label=app=${SERVICE_NAME}" \
     --filter "label=deploy.slot=${next_slot}" \
