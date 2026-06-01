@@ -15,7 +15,10 @@ PUBLIC_PORT="8000"
 CANDIDATE_PORT="8010"
 
 DOCKER_NETWORK="${DOCKER_NETWORK:-crypto-project-network}"
+HEALTH_SCHEME="${HEALTH_SCHEME:-https}"
 HEALTH_PATH="${HEALTH_PATH:-/api/v1/actuator/health/liveness}"
+CURL_INSECURE="${CURL_INSECURE:-true}"
+
 JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-"-Xms256m -Xmx584m -Dreactor.netty.ioWorkerCount=8"}"
 MEM_LIMIT="${MEM_LIMIT:-768m}"
 
@@ -30,10 +33,15 @@ log() {
 
 wait_for_health() {
   local port="$1"
-  local url="http://localhost:${port}${HEALTH_PATH}"
+  local url="${HEALTH_SCHEME}://localhost:${port}${HEALTH_PATH}"
+  local curl_opts="-fsS"
+
+  if [[ "$CURL_INSECURE" == "true" ]]; then
+    curl_opts="-kfsS"
+  fi
 
   for attempt in {1..40}; do
-    if curl -fsS "$url" >/dev/null 2>&1; then
+    if curl $curl_opts "$url" >/dev/null 2>&1; then
       log "Health check passed: $url"
       return 0
     fi
@@ -141,7 +149,8 @@ main() {
   log "new image      : $NEW_IMAGE"
   log "public port    : $PUBLIC_PORT"
   log "candidate port : $CANDIDATE_PORT"
-  log "health path    : $HEALTH_PATH"
+  log "health url     : ${HEALTH_SCHEME}://localhost:<port>${HEALTH_PATH}"
+  log "curl insecure  : $CURL_INSECURE"
   log "========================================"
 
   if [[ ! -f "$KEYSTORE_HOST_PATH" ]]; then
