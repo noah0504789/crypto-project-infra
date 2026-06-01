@@ -16,8 +16,8 @@ MEM_LIMIT="768m"
 
 TARGET_SCALE="${TARGET_SCALE:?TARGET_SCALE is required}"
 
-HEALTH_PATH="/api/v1/actuator/health/liveness"
-DEPLOYMENT_BASE_PATH="/api/v1/internal/deployment"
+HEALTH_PATH="/actuator/health/liveness"
+DEPLOYMENT_BASE_PATH="/internal/deployment"
 
 # WebSocket은 기존 연결이 있을 수 있으므로 user-service보다 길게 둠
 DRAIN_SECONDS="${DRAIN_SECONDS:-30}"

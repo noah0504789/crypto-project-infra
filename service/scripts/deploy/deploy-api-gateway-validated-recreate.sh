@@ -16,7 +16,7 @@ CANDIDATE_PORT="8010"
 
 DOCKER_NETWORK="${DOCKER_NETWORK:-crypto-project-network}"
 HEALTH_SCHEME="${HEALTH_SCHEME:-https}"
-HEALTH_PATH="${HEALTH_PATH:-/api/v1/actuator/health/liveness}"
+HEALTH_PATH="${HEALTH_PATH:-/actuator/health/liveness}"
 CURL_INSECURE="${CURL_INSECURE:-true}"
 
 JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-"-Xms256m -Xmx584m -Dreactor.netty.ioWorkerCount=8"}"

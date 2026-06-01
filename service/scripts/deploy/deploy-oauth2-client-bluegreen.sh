@@ -16,8 +16,8 @@ MEM_LIMIT="768m"
 
 TARGET_SCALE="${TARGET_SCALE:?TARGET_SCALE is required}"
 
-HEALTH_PATH="/api/v1/actuator/health/liveness"
-DEPLOYMENT_BASE_PATH="/api/v1/internal/deployment"
+HEALTH_PATH="/actuator/health/liveness"
+DEPLOYMENT_BASE_PATH="/internal/deployment"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
