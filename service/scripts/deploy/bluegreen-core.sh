@@ -151,9 +151,10 @@ validate_port_ranges() {
 remove_slot_containers() {
   local slot="$1"
 
-  mapfile -t containers < <(docker ps -a --filter "name=^/${SERVICE_NAME}-${slot}-" --format '{{.Names}}')
-
-  for container in "${containers[@]:-}"; do
+  docker ps -a \
+    --filter "name=^/${SERVICE_NAME}-${slot}-" \
+    --format '{{.Names}}' |
+  while IFS= read -r container; do
     if [[ -n "$container" ]]; then
       log "Removing container: $container"
       docker rm -f "$container" >/dev/null 2>&1 || true
