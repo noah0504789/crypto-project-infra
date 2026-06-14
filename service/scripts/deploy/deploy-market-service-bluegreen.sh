@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SERVICE_NAME="crypto-market-service"
+IMAGE_REPOSITORY="${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/crypto-market-service"
+
+CONTAINER_PORT="8200"
+
+# host port range
+# blue scale 3 -> 8210, 8211, 8212
+# green scale 3 -> 8310, 8311, 8312
+BLUE_PORT_START="8210"
+GREEN_PORT_START="8310"
+
+JAVA_TOOL_OPTIONS="-Xms128m -Xmx256m"
+MEM_LIMIT="512m"
+
+TARGET_SCALE="${TARGET_SCALE:?TARGET_SCALE is required}"
+
+HEALTH_PATH="/api/v1/actuator/health/liveness"
+DEPLOYMENT_BASE_PATH="/api/v1/internal/deployment"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+export SERVICE_NAME
+export IMAGE_REPOSITORY
+export CONTAINER_PORT
+export BLUE_PORT_START
+export GREEN_PORT_START
+export JAVA_TOOL_OPTIONS
+export MEM_LIMIT
+export TARGET_SCALE
+export HEALTH_PATH
+export DEPLOYMENT_BASE_PATH
+
+exec "$SCRIPT_DIR/bluegreen-core.sh" "${1:-latest}"
