@@ -6,15 +6,16 @@ db.createUser({
   roles: [{ role: "root", db: "admin" }]
 })
 
-db.createRole({
-  role: "exporterSystemVersionRead",
-  privileges: [
-    {
-      resource: { db: "admin", collection: "system.version" },
-      actions: ["find"]
-    }
-  ],
-  roles: []
+db.createUser({
+  user: "chatuser",
+  pwd: "chatpass",
+  roles: [{ role: "readWrite", db: "chat" }]
+})
+
+db.createUser({
+  user: "notificationuser",
+  pwd: "notificationpass",
+  roles: [{ role: "readWrite", db: "notification" }]
 })
 
 db.createUser({
@@ -28,8 +29,13 @@ db.createUser({
   ]
 })
 
-db.createUser({
-  user: "chatuser",
-  pwd: "chatpass",
-  roles: [{ role: "readWrite", db: "chat" }]
+db.createRole({
+  role: "exporterSystemVersionRead",
+  privileges: [
+    {
+      resource: { db: "admin", collection: "system.version" },
+      actions: ["find"]
+    }
+  ],
+  roles: []
 })
