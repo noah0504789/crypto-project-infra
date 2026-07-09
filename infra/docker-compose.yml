@@ -1,13 +1,13 @@
 services:
-  mysql-primary:
+  mysql-master:
     image: mysql:8.4
-    container_name: mysql-primary
+    container_name: mysql-master
     environment:
       - MYSQL_ROOT_PASSWORD=root
     ports: ["3306:3306"]
     volumes:
-      - mysql-primary-data:/var/lib/mysql
-      - ./mysql/mysql-primary.cnf:/etc/mysql/conf.d/mysql.cnf
+      - mysql-master-data:/var/lib/mysql
+      - ./mysql/mysql-master.cnf:/etc/mysql/conf.d/mysql.cnf
       - ./mysql/mysql-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     networks: [crypto-project-network]
 
@@ -261,7 +261,7 @@ networks:
     external: true
 
 volumes:
-  mysql-primary-data:
+  mysql-master-data:
     external: true
   mysql-replica-data:
     external: true

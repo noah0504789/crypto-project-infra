@@ -6,11 +6,18 @@ CREATE DATABASE IF NOT EXISTS `event`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
+CREATE DATABASE IF NOT EXISTS `market`
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;  
+
 CREATE USER IF NOT EXISTS 'user'@'%' IDENTIFIED BY 'userpass';
 GRANT ALL PRIVILEGES ON `user`.* TO 'user'@'%';
 
 CREATE USER IF NOT EXISTS 'event'@'%' IDENTIFIED BY 'eventpass';
 GRANT ALL PRIVILEGES ON `event`.* TO 'event'@'%';
+
+CREATE USER IF NOT EXISTS 'market'@'%' IDENTIFIED BY 'marketpass';
+GRANT ALL PRIVILEGES ON `market`.* TO 'market'@'%';
 
 CREATE USER IF NOT EXISTS 'repl'@'%' IDENTIFIED BY 'replpass';
 GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'repl'@'%';
