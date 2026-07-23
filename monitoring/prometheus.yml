@@ -50,7 +50,7 @@ scrape_configs:
   - job_name: 'crypto-chat-service'
     metrics_path: /api/v1/actuator/prometheus
     docker_sd_configs:
-      - host: unix:///var/run/docker.sock
+      - host: tcp://docker-socket-proxy:2375
         refresh_interval: 15s
     relabel_configs:
       # app 라벨이 이 서비스인 컨테이너만
@@ -79,7 +79,7 @@ scrape_configs:
   - job_name: 'crypto-websocket-gateway'
     metrics_path: /actuator/prometheus
     docker_sd_configs:
-      - host: unix:///var/run/docker.sock
+      - host: tcp://docker-socket-proxy:2375
         refresh_interval: 15s
     relabel_configs:
       - source_labels: [__meta_docker_container_label_app]
@@ -98,5 +98,3 @@ scrape_configs:
         replacement: service
       - target_label: service
         replacement: websocket-service
-# rule_files:
-#   - '/etc/prometheus/prometheus.rules.yml'

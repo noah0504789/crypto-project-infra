@@ -28,22 +28,6 @@ docs에 남는다). 새 "확인 필요"·예정 작업은 개별 문서가 아�
   쓰지 않으므로(outbox-poller 제외) 한쪽만 바꾸면 값이 어긋난다. compose 정의를 로컬/수동 용도로
   유지할지, single-source로 정리할지 결정 필요. (출처: `docs/SERVICE.md`)
 
-## 모니터링 스택 (`monitoring/`)
-
-- [ ] **Prometheus docker.sock + `user: root` 보안 강화.** 자동 발견(`docker_sd`)이 컨테이너 목록을
-  Docker에 질의해야 해서 `monitoring/docker-compose.yml`의 prometheus에 `/var/run/docker.sock`을 마운트하고,
-  기본 사용자(nobody)로는 소켓 읽기 권한이 없어 `user: root`로 실행 중이다(권한 문제로 필요, 검증됨).
-  - **위험**: root + Docker 소켓 = 사실상 호스트 Docker 전체 제어 권한. Prometheus가 뚫리면 호스트 장악 가능.
-  - **`:ro` 함정**: 소켓을 `:ro`로 마운트해도 Docker API는 양방향이라 읽기 전용으로 제한되지 않는다
-    (파괴적 명령도 통함). 즉 `:ro`는 실질 보호가 아니다.
-  - **개선안**: 읽기 요청만 통과시키는 docker-socket-proxy를 앞에 두면 root·직접 소켓 마운트 없이
-    최소 권한으로 자동 발견 가능. 도입 검토. (출처: `docs/MONITORING.md`)
-- [ ] **`prometheus.rules.yml` 미로드.** 파일은 있으나 `rule_files`·compose의 rules 마운트가 주석 처리되어
-  로드되지 않는다. 의도적 비활성인지 잔재인지 확인 후 정리. (출처: `docs/MONITORING.md`)
-- [ ] **monitoring exporter 자격증명 평문.** `my-primary.cnf`·`my-replica.cnf`에 mysql-exporter 비밀번호가
-  평문으로 있다(infra `.env`의 `MYSQL_EXPORTER_PASSWORD`와 값 일치 필요). infra처럼 env 주입으로 옮길지 검토.
-  (출처: `docs/MONITORING.md`)
-
 ## 인프라 스택 (`infra/`)
 
 - [ ] **Redis 클러스터 재시작 안정성(복구).** 부트스트랩(`redis-cluster-init`)은 최초 구성만 하고, 하드

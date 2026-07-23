@@ -1,7 +1,0 @@
-groups:
-- name: spring-rules
-  rules:
-  - record: instance:process_cpu_usage:avg_rate1m
-    expr: avg(rate(process_cpu_usage[1m])) by (instance)
-    labels:
-      env: prod

@@ -41,9 +41,9 @@ compose가 `${VAR}`로 컨테이너 환경변수에 넣고, init 스크립트(`m
 
 - **fresh 볼륨에서만 반영된다.** init 스크립트는 데이터 디렉토리가 비어 있을 때만 실행되므로,
   이미 초기화된 볼륨의 비밀번호는 `.env` 값을 바꿔도 자동으로 바뀌지 않는다(수동 회전 필요).
-- **모니터링과 값이 맞물린다.** `MYSQL_EXPORTER_PASSWORD`는 `monitoring/my-primary.cnf`·
-  `my-replica.cnf`의 exporter 비밀번호와, `MONGO_EXPORTER_PASSWORD`는 `monitoring/.env`와 일치해야
-  한다. `MONGO_ROOT_USERNAME`/`PASSWORD`는 mongo-express(관리 UI) 접속에도 재사용된다.
+- **모니터링과 값이 맞물린다.** `MYSQL_EXPORTER_PASSWORD`·`MONGO_EXPORTER_PASSWORD`는 `monitoring/.env`의
+  같은 키(exporter가 mysql/mongo에 접속하는 비번)와 일치해야 한다. `MONGO_ROOT_USERNAME`/`PASSWORD`는
+  mongo-express(관리 UI) 접속에도 재사용된다.
 - 과거 커밋 히스토리에는 평문 비밀번호가 남아 있다(→ `TODO.md`).
 
 ## 포트 요약

@@ -31,11 +31,12 @@
   이름이 배포마다 바뀐다(`...-blue-1` ↔ `...-green-1`, scale에 따라 개수도 변동). 그래서 정적 target
   대신 **Docker 서비스 디스커버리(`docker_sd_configs`)** 로 `app=<서비스명>` 라벨이 붙은 컨테이너를
   자동 발견해 스크레이프한다(라벨은 `bluegreen-core.sh`가 부여). 슬롯 전환·scale 변경에 자동 대응한다.
-  - **요구사항**: Prometheus가 `/var/run/docker.sock`을 읽어야 하며, 기본 사용자(nobody)로는 권한이 없어
-    발견이 전부 실패한다 → compose에서 `user: root`로 실행(검증 완료). 보안 강화(docker-socket-proxy)는
-    루트 `TODO.md` 참고.
-- **비활성(주석)**: `crypto-outbox-poller`, `rule_files`(→ `prometheus.rules.yml`은 존재하지만
-  로드되지 않음. compose의 rules 마운트도 주석 처리).
+  - **소켓 접근(docker-socket-proxy 경유)**: docker_sd는 Docker API로 컨테이너 목록·네트워크를 질의해야
+    한다. Prometheus에 소켓을 직접 물리는 대신 **`docker-socket-proxy`**(읽기 전용: `CONTAINERS`/`NETWORKS`만
+    허용, `POST=0`)를 앞에 두고 Prometheus는 `tcp://docker-socket-proxy:2375`로 조회한다. 덕분에
+    Prometheus에 `docker.sock` 직접 마운트·`user: root`가 필요 없다(검증 완료). 소켓을 직접 다루는 건
+    이 작은 전용 프록시 하나뿐이다.
+- **비활성(주석)**: `crypto-outbox-poller` scrape job(주석 처리).
 
 ### Grafana
 - `3000`, admin 계정(`GF_SECURITY_ADMIN_USER`/`_PASSWORD`)은 `monitoring/.env`
@@ -44,9 +45,10 @@
 
 ### Exporter들
 - `node-exporter`: 호스트 지표(`/`를 ro 마운트), CPU/mem/fs/loadavg/netdev/stat만 수집.
-- `mysql-primary-exporter`·`mysql-replica-exporter`: `mysqld_exporter`. 접속 정보는 각각
-  `my-primary.cnf`·`my-replica.cnf`(`[client]` user/password)에서 읽는다 — **비밀번호가 평문**이고
-  infra의 `MYSQL_EXPORTER_PASSWORD`와 일치해야 한다(→ 루트 `TODO.md`).
+- `mysql-primary-exporter`(→`mysql-master:3306`)·`mysql-replica-exporter`(→`mysql-replica:3306`):
+  `mysqld_exporter`. 접속은 `--mysqld.address`/`--mysqld.username`(= `${MYSQL_EXPORTER_USER}`) 플래그 +
+  `MYSQLD_EXPORTER_PASSWORD`(= `${MYSQL_EXPORTER_PASSWORD}`) 환경변수로 주입한다(`monitoring/.env`,
+  평문 파일 없음). 비밀번호는 infra의 `MYSQL_EXPORTER_PASSWORD`(mysql-exporter 계정 비번)와 일치해야 한다.
 - `redis-exporter-0~5`: redis 노드별 1개, `--is-cluster`.
 - `mongodb-exporter-primary`/`-secondary-0`/`-1`: `MONGODB_URI`에 `${MONGO_EXPORTER_USER}`/
   `${MONGO_EXPORTER_PASSWORD}` 주입(→ `monitoring/.env`, env 기반이라 평문 하드코딩 아님).

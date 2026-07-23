@@ -10,10 +10,23 @@ services:
       - "--web.enable-lifecycle"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      # - ./prometheus.rules.yml:/etc/prometheus/prometheus.rules.yml
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    user: root
+    depends_on: [docker-socket-proxy]
     mem_limit: 384m
+    networks: [crypto-project-network]
+
+  # docker_sd(서비스 자동 발견)용 Docker API를 읽기 전용(컨테이너 목록만)으로 노출하는 프록시.
+  # 이걸 앞에 두면 Prometheus에 docker.sock 직접 마운트·user: root가 필요 없다.
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: docker-socket-proxy
+    restart: unless-stopped
+    environment:
+      - CONTAINERS=1   # GET /containers/json (docker_sd 컨테이너 목록)
+      - NETWORKS=1     # GET /networks (docker_sd 네트워크 라벨 계산)
+      - POST=0         # 쓰기(POST) API 차단
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    mem_limit: 64m
     networks: [crypto-project-network]
 
   grafana:
@@ -53,13 +66,14 @@ services:
     image: prom/mysqld-exporter:latest
     container_name: mysql-primary-exporter
     command:
-      - "--config.my-cnf=/config/.my.cnf"
+      - "--mysqld.address=mysql-master:3306"
+      - "--mysqld.username=${MYSQL_EXPORTER_USER}"
       - "--collect.global_status"
       - "--collect.global_variables"
       - "--collect.info_schema.processlist"
       - "--collect.info_schema.tables"
-    volumes:
-      - ./my-primary.cnf:/config/.my.cnf:ro
+    environment:
+      - MYSQLD_EXPORTER_PASSWORD=${MYSQL_EXPORTER_PASSWORD}
     mem_limit: 64m
     networks: [crypto-project-network]
 
@@ -67,13 +81,14 @@ services:
     image: prom/mysqld-exporter:latest
     container_name: mysql-replica-exporter
     command:
-      - "--config.my-cnf=/config/.my.cnf"
+      - "--mysqld.address=mysql-replica:3306"
+      - "--mysqld.username=${MYSQL_EXPORTER_USER}"
       - "--collect.global_status"
       - "--collect.global_variables"
       - "--collect.info_schema.processlist"
       - "--collect.info_schema.tables"
-    volumes:
-      - ./my-replica.cnf:/config/.my.cnf:ro
+    environment:
+      - MYSQLD_EXPORTER_PASSWORD=${MYSQL_EXPORTER_PASSWORD}
     mem_limit: 64m
     networks: [crypto-project-network]
 

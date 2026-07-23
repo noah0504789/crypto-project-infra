@@ -1,5 +1,0 @@
-[client]
-user=mysql-exporter
-password=mysql-exporterpass
-host=mysql-replica
-port=3306
