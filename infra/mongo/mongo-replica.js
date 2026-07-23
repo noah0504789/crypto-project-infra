@@ -4,7 +4,8 @@ db = db.getSiblingDB("admin");
 // 안전하게 election 전에 구성되도록 sleep (bash 따로 써도 됨)
 sleep(10000);
 
-db.auth("root", "rootpass")
+// 비밀번호는 컨테이너 환경변수(= infra/.env)에서 주입한다.
+db.auth(process.env.MONGO_ROOT_USERNAME, process.env.MONGO_ROOT_PASSWORD)
 
 rs.initiate({
   _id: "rs0",
