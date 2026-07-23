@@ -33,7 +33,6 @@ services:
     networks: [crypto-project-network]
 
   crypto-websocket-gateway:
-    profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-websocket-gateway:${WEBSOCKET_GATEWAY_IMAGE_TAG:-latest}
     container_name: crypto-websocket-gateway
     ports: ["8100:8100"]
@@ -43,7 +42,6 @@ services:
     networks: [crypto-project-network]
 
   crypto-oauth2-authorization-server:
-    profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-oauth2-authorization-server:${OAUTH2_AUTHORIZATION_SERVER_IMAGE_TAG:-latest}
     container_name: crypto-oauth2-authorization-server
     ports: ["9000:9000"]
@@ -53,7 +51,6 @@ services:
     networks: [crypto-project-network]
 
   crypto-oauth2-client:
-    profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-oauth2-client:${OAUTH2_CLIENT_IMAGE_TAG:-latest}
     container_name: crypto-oauth2-client
     ports: ["8900:8900"]
@@ -63,7 +60,6 @@ services:
     networks: [crypto-project-network]
 
   crypto-user-service:
-    profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-user-service:${USER_SERVICE_IMAGE_TAG:-latest}
     container_name: crypto-user-service
     ports: ["8090:8090"]
@@ -73,7 +69,6 @@ services:
     networks: [crypto-project-network]
 
   crypto-chat-service:
-    profiles: ["legacy"]
     image: ${DOCKERHUB_USERNAME}/crypto-chat-service:${CHAT_SERVICE_IMAGE_TAG:-latest}
     container_name: crypto-chat-service
     ports: ["8080:8080"]
