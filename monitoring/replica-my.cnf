@@ -1,5 +1,0 @@
-[client]
-user=replica-exporter
-password=replica-exporterpass
-host=mysql-replica
-port=3306
