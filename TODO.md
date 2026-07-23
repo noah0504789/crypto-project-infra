@@ -48,11 +48,6 @@ docs에 남는다). 새 "확인 필요"·예정 작업은 개별 문서가 아�
 
 ## 공통 (배포 전략 공통)
 
-- [ ] **`ready`/`not-ready` 마킹이 애플리케이션 내부에서 정확히 무엇을 바꾸는지.** blue/green,
-  validated-recreate 둘 다 호출하지만 구현은 이 저장소에 없다. `crypto-project-backend`의
-  `/internal/deployment` 컨트롤러(예: Eureka self-preservation 해제, load balancer weight,
-  `/actuator/health/readiness` 상태 전환 등)를 확인해야 실제 트래픽 전환 시점을 정확히 알 수 있다.
-  (출처: `docs/DEPLOYMENT_FLOW.md`)
 - [ ] **크로스 서비스 포트 충돌.** blue/green 4개, validated-recreate 5개 서비스 모두 각 스크립트가 자신의
   포트 범위/candidate 포트만 검증하고 다른 서비스와의 충돌은 검증하지 않는다. 현재는 사람이 수동으로
   겹치지 않게 맞춘 상태다. 새 서비스 추가·기존 포트 변경 시 전체 스크립트를 훑어 수동 대조가 필요하다.
@@ -64,19 +59,12 @@ docs에 남는다). 새 "확인 필요"·예정 작업은 개별 문서가 아�
 ## 전략별 확인 필요
 
 ### Validated Recreate
-- [ ] **`DEPLOY_TOKEN` 필수 여부가 서비스마다 다른 이유.** eureka/oauth2-authorization-server/oauth2-client는
-  토큰이 없으면 배포 자체를 막고, config/api-gateway(및 blue/green 4개)는 토큰이 없어도 ready 마킹만 스킵하고
-  계속 진행한다. 의도된 정책 차이인지 비일관성인지 코드만으로 판단 불가 — 운영 `.env`에 토큰이 항상
-  설정되는지도 확인 못함. (출처: `docs/DEPLOYMENT_FLOW_VALIDATED_RECREATE.md`)
 - [ ] **api-gateway 원격 디버그(JDWP) 포트를 `127.0.0.1`에만 바인딩하는 것으로 충분한 격리인지.** 러너
   호스트의 네트워크/방화벽 구성에 달려 있어 이 저장소만으로는 판단 불가.
   (출처: `docs/DEPLOYMENT_FLOW_VALIDATED_RECREATE.md`)
 
 ### Safe Recreate
-- [ ] **outbox-poller에 HTTP 헬스체크가 없는 이유.** 백그라운드 컨슈머라 actuator 엔드포인트가 없거나
-  라우팅되지 않아서인지, 단순히 다듬어지지 않은 것인지 코드만으로 알 수 없다. 로그 문자열 매칭 기반
-  판단은 새 예외 메시지가 추가되면 감지하지 못할 수 있다는 한계도 있다.
-  (출처: `docs/DEPLOYMENT_FLOW_SAFE_RECREATE.md`)
 - [ ] **outbox-poller rollback의 재검증 부재.** rollback 후 상태/로그를 출력만 하고 성공 여부를 다시
-  판정하지 않는다 — rollback 자체가 실패해도 스크립트는 그대로 `exit 1`로 끝난다. 의도적으로 "이후는
-  사람이 본다"는 설계인지 확인 필요. (출처: `docs/DEPLOYMENT_FLOW_SAFE_RECREATE.md`)
+  판정하지 않는다 — rollback 자체가 실패해도 스크립트는 그대로 `exit 1`로 끝난다. (배경: outbox-poller에
+  actuator 헬스 프로브가 없어 forward/rollback 모두 로그 기반이라는 건 확인됨 → `docs/DEPLOYMENT_FLOW_SAFE_RECREATE.md`.
+  남은 건 rollback 후 재검증 루프를 넣을지 vs 수동 확인으로 둘지의 **스크립트 설계 결정**.)

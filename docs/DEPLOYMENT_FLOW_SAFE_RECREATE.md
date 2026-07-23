@@ -4,9 +4,13 @@
 
 대상: `crypto-outbox-poller` 한 개뿐이다. 다른 두 전략과 달리 `docker run`이 아니라
 **`service/docker-compose.yml`의 compose 서비스를 그대로 재기동**하며, HTTP 헬스체크가 전혀 없다 —
-컨테이너 상태와 로그 문자열만으로 성공/실패를 판단한다. outbox-poller는 인바운드 트래픽을 받지
-않는 백그라운드 컨슈머라 blue/green처럼 슬롯을 나눌 필요가 없어서 이렇게 단순화된 것으로 보인다
-(정확한 설계 의도는 저장소 최상위 [`TODO.md`](../TODO.md) 참고).
+컨테이너 상태와 로그 문자열만으로 성공/실패를 판단한다.
+
+**왜 HTTP 헬스체크가 없나 (backend 확인 완료)**: outbox-poller의 주 워크로드는 Kafka 스트림 컨슈머다.
+웹 서버(port 9200, DLQ 제어 REST `/dlq-poller/start,stop`)는 있지만 **actuator 헬스 프로브가 설정돼
+있지 않다**(remote config `git-config-repo/dynamic/outbox-poller.yml`에 `server.port`만, `management`/
+liveness 설정 없음. `common-actuator`도 미포함). 그래서 다른 서비스처럼 `/actuator/health/liveness`로
+폴링할 대상이 없어, 안전 재기동은 컨테이너 `State.Status` + 시작 로그 패턴으로 판단한다.
 
 ## 단계별 흐름
 
