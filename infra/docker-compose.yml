@@ -27,6 +27,20 @@ services:
       - ./mysql/mysql-replica.cnf:/etc/mysql/conf.d/mysql.cnf
     networks: [crypto-project-network]
 
+  # 최초 1회 replica → master 복제 연결(idempotent, GTID). 이미 복제 중이면 아무것도 안 하고 종료.
+  mysql-replica-init:
+    image: mysql:8.4
+    container_name: mysql-replica-init
+    depends_on: [mysql-master, mysql-replica]
+    restart: "no"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_REPL_PASSWORD: ${MYSQL_REPL_PASSWORD}
+    entrypoint: ["sh", "/init/mysql-replica-init.sh"]
+    volumes:
+      - ./mysql/mysql-replica-init.sh:/init/mysql-replica-init.sh:ro
+    networks: [crypto-project-network]
+
   redis-0:
     image: redis:7.2-alpine
     container_name: redis-0
@@ -86,7 +100,18 @@ services:
       - redis-5-data:/data
       - ./redis/7105.conf:/usr/local/etc/redis/redis.conf:ro
     networks: ["crypto-project-network"]
-    
+
+  # 최초 1회 Redis 클러스터 구성(idempotent). 이미 구성돼 있으면 아무것도 안 하고 종료.
+  redis-cluster-init:
+    image: redis:7.2-alpine
+    container_name: redis-cluster-init
+    depends_on: [redis-0, redis-1, redis-2, redis-3, redis-4, redis-5]
+    restart: "no"
+    entrypoint: ["sh", "/init/redis-cluster-init.sh"]
+    volumes:
+      - ./redis/redis-cluster-init.sh:/init/redis-cluster-init.sh:ro
+    networks: ["crypto-project-network"]
+
   mongo-primary:
     image: mongo:6.0
     container_name: mongo-primary

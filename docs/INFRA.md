@@ -72,15 +72,27 @@ compose가 `${VAR}`로 컨테이너 환경변수에 넣고, init 스크립트(`m
   `.sql`이 아닌 `.sh`. `.sql`은 환경변수 치환이 안 됨). DB 3개(`user`, `event`, `market`)와 계정을
   생성한다: 서비스 계정(`user`/`event`/`market`), 복제 계정(`repl`, `REPLICATION SLAVE`), 모니터링
   계정(`mysql-exporter`). 비밀번호는 `.env`에서 주입한다(위 "자격증명" 참고).
-- **주의**: 이 저장소 파일만으로는 replica가 master를 바라보게 하는 실제 연결
-  (`CHANGE REPLICATION SOURCE TO ... / START REPLICA`)이 자동화되어 있지 않다. replica cnf는
-  `read_only`만 설정할 뿐이다 → `TODO.md` 확인 필요 항목.
+- **복제 연결 자동화**: `mysql-replica-init` 서비스(compose)가 최초 1회 replica를 master에 연결한다
+  (`mysql/mysql-replica-init.sh`). GTID `SOURCE_AUTO_POSITION=1`로 `CHANGE REPLICATION SOURCE` +
+  `START REPLICA` 후 `Replica_IO_Running`/`SQL_Running`이 `Yes`가 되는지 확인하고 종료한다.
+  **idempotent** — 이미 복제 중이면 아무것도 안 하므로 `docker compose up`을 다시 해도 안전하다.
+  접속·복제 자격증명은 `infra/.env`(`MYSQL_ROOT_PASSWORD`, `MYSQL_REPL_PASSWORD`)에서 주입한다.
+- **한계(복구는 부분 지원)**: 재시작 시 replica는 보통 스스로 복제를 재개한다(hostname + GTID + 영속된
+  복제 설정). 다만 하드 크래시로 relay log 손상/GTID 틀어짐 등으로 깨진 경우는 `RESET REPLICA` 후
+  재구성이 필요할 수 있고, 이 부트스트랩은 그런 heal은 하지 않는다 → `TODO.md` 참고.
 
 ### Redis (6-node 클러스터)
 - `redis-0`~`redis-5`, 각 `7100`~`7105`. 각 노드 `NNNN.conf`는 `cluster-enabled yes`,
   `appendonly yes`(AOF), `cluster-announce-hostname/-port/-bus-port`를 자기 노드에 맞게 설정.
-- **주의**: compose는 6개 노드를 띄우기만 한다. 실제 클러스터 구성(`redis-cli --cluster create ...`,
-  슬롯 할당)은 이 파일들에 없다 → 최초 1회 수동 실행 필요, `TODO.md` 확인 필요 항목.
+- **클러스터 구성 자동화**: `redis-cluster-init` 서비스(compose)가 최초 1회 클러스터를 만든다
+  (`redis/redis-cluster-init.sh`). 6노드를 `--cluster-replicas 1`(마스터 3 + 복제 3)로 구성하고
+  `cluster_state:ok` 수렴까지 확인 후 종료한다. **idempotent** — 이미 구성돼 있으면(노드가 서로
+  인지) 아무것도 안 하므로 `docker compose up`을 다시 해도 안전하다.
+- **한계(복구 미지원)**: 이 부트스트랩은 최초 구성·정상 시 skip만 한다. **하드 재부팅 후 깨진 클러스터를
+  자동 복구하지는 않는다.** Docker 컨테이너 IP가 재시작 때 바뀌면 `nodes.conf`의 주소가 stale해져
+  `cluster_state:fail`이 될 수 있는데(현재 `cluster-announce-ip`/`cluster-preferred-endpoint-type
+  hostname` 미설정), 그 경우 `known_nodes>1`이라 스크립트는 skip한다 → 재시작 안정성(고정 IP 등)은
+  `TODO.md` 참고.
 
 ### MongoDB (replica set `rs0`)
 - primary + secondary 2대. `mongod.conf`: `replSetName=rs0`, `authorization=enabled`,

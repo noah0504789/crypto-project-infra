@@ -59,8 +59,10 @@
 
 7. **레거시 compose 컨테이너 정리** (`stop_legacy_container`)
    - 슬롯 접미사 없이 `$SERVICE_NAME` 이름 그대로인 컨테이너가 남아 있으면 강제 제거.
-   - blue/green 도입 이전 방식(compose가 슬롯 없이 단일 컨테이너로 관리하던 상태)의 잔재로 보인다 —
-     정확한 도입 배경은 저장소 최상위 [`TODO.md`](../TODO.md) 참고.
+   - blue/green 도입 이전에 compose가 `$SERVICE_NAME` 단일 컨테이너로 관리하던 방식의 잔재를 청소하는
+     안전장치다(그 방식은 한때 compose의 `legacy` 프로필로 남아 있다가 제거됨 — 커밋
+     "블루그린 컨테이너: 기존방식으로 올릴때는 profile을 legacy로"). 프로필 제거 후에는 일반
+     `docker compose up`으로도 그 단일 컨테이너가 뜰 수 있어 이 청소 로직은 여전히 유효하다.
 
 8. **이전 슬롯 drain 후 정지**
    - 활성 슬롯이 `none`이 아니면: 이전 슬롯을 `not-ready`로 마킹(`|| true`로 실패 무시) →
