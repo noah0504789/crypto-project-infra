@@ -25,7 +25,8 @@
 ### Prometheus (메트릭 수집)
 - `prometheus.yml`의 scrape 대상. `scrape_interval` 10s, retention 24h.
 - **인프라 job(정적 target)**: `node`(node-exporter:9100), `mysql`(primary/replica exporter:9104),
-  `redis-cluster`(redis-exporter-0~5:9121), `mongo`(primary exporter만), `kafka`(kafka-exporter:9308).
+  `redis-cluster`(redis-exporter-0~5:9121), `mongo`(primary·secondary-0·secondary-1 exporter 3개, 각 9216),
+  `kafka`(kafka-exporter:9308).
   컨테이너 이름이 고정이라 정적 target으로 충분하다.
 - **서비스 job(자동 발견)**: `crypto-chat-service`·`crypto-websocket-gateway`는 blue/green이라 컨테이너
   이름이 배포마다 바뀐다(`...-blue-1` ↔ `...-green-1`, scale에 따라 개수도 변동). 그래서 정적 target
