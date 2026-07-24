@@ -32,7 +32,7 @@ compose가 `${VAR}`로 컨테이너 환경변수에 넣고, init 스크립트(`m
 | `MYSQL_EVENT_DB_PASSWORD` | `event` DB 서비스 계정 |
 | `MYSQL_MARKET_DB_PASSWORD` | `market` DB 서비스 계정 |
 | `MYSQL_REPL_PASSWORD` | 복제 계정 `repl` |
-| `MYSQL_EXPORTER_PASSWORD` | 모니터링 exporter (monitoring cnf와 일치 필요) |
+| `MYSQL_EXPORTER_PASSWORD` | 모니터링 exporter (`monitoring/.env`와 일치 필요) |
 | `MONGO_ROOT_USERNAME` / `MONGO_ROOT_PASSWORD` | Mongo root. mongo-express 접속에도 재사용 |
 | `MONGO_CHAT_PASSWORD` | `chatuser`(chat DB) |
 | `MONGO_NOTIFICATION_PASSWORD` | `notificationuser`(notification DB) |

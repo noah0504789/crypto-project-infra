@@ -20,7 +20,7 @@ Blue/Green과 달리 **공통 core 스크립트가 없다** — 5개 스크립�
 | Health scheme | http | http | **https** (`CURL_INSECURE` 기본 true) | http | http |
 | `DEPLOY_TOKEN` 필수 여부 | 선택 (없으면 ready 마킹 스킵, 성공 취급) | **필수** (main() 시작 시 명시적 체크로 exit 1) | 선택 (스킵) | **필수** (`:?` 파라미터 확장, 스크립트 로드 시점에 실패) | **필수** (`:?`) |
 | `.deploy/*.current-image` 사전 존재 요구 | **필수** (없으면 최초부터 exit 1, 수동 부트스트랩 필요) | **필수** | **필수** | 불필요 (운영 컨테이너가 있으면 교체 직전에 자동으로 캡처) | 불필요 (동일) |
-| 특이 기능 | candidate 포트 8898 | candidate 포트 18761 | keystore(TLS) 마운트 필수 | candidate 포트 9010 | candidate 포트 8930 |
+| 특이 기능 | candidate 포트 8898 | candidate 포트 18761 · candidate도 ready 마킹까지 검증(다른 스크립트는 candidate 헬스체크만) | keystore(TLS) 마운트 필수 | candidate 포트 9010 | candidate 포트 8930 |
 
 ## 원격 디버그 (JDWP)
 
