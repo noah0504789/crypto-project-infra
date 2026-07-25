@@ -1,7 +1,7 @@
 # 배포 스크립트 안전 규칙
 
-이 파일은 CLAUDE.md에서 `@import`로 항상 로드된다. `service/scripts/deploy/`, `service/docker-compose.yml`,
-`service/.deploy/`를 다룰 때는 무조건 적용된다.
+이 파일은 자동으로 로드되지 않는다(루트 `CLAUDE.md`의 "규칙 참조" 표 참고). `service/scripts/deploy/`,
+`service/docker-compose.yml`, `service/.deploy/`를 다루기 전에 먼저 읽고, 그 작업에는 무조건 적용한다.
 
 ## 왜 조심해야 하는가
 `service/scripts/deploy/*.sh`는 **운영 self-hosted runner가 그대로 실행**하는 스크립트다.
