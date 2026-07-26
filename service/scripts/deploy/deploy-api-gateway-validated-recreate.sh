@@ -170,6 +170,8 @@ run_gateway_container() {
   local host_port="$2"
   local image="$3"
 
+  # api-gateway는 외부 진입점이라 0.0.0.0에 게시한다(외부 클라이언트가 직접 붙는 유일한 포트).
+  # 다른 서비스처럼 127.0.0.1로 묶으면 외부에서 접근 불가. (보안 배경: 루트 TODO.md "보안 · 네트워크 노출")
   local -a docker_port_options=(
     -p "${host_port}:${CONTAINER_PORT}"
   )

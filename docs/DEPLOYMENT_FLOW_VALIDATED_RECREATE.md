@@ -46,6 +46,15 @@ Blue/Green과 달리 **공통 core 스크립트가 없다** — 5개 스크립�
   또는 `CANDIDATE_PORT`와 충돌하면 배포를 시작하지 않고 종료한다.
 - 컨테이너에 `remote-debug.enabled`/`remote-debug.port` 라벨이 붙는다.
 
+## 앱 포트 바인딩 (외부 노출 차단)
+
+- **eureka·oauth2-authorization-server·oauth2-client**: 앱 포트를 `-p 127.0.0.1:${host_port}:${CONTAINER_PORT}`로
+  host-local 바인딩한다. 인터서비스는 Docker 네트워크/Eureka로, 헬스체크·ready는 `localhost`로 접근하므로
+  영향 없고, 게이트웨이를 우회한 외부 직접 접근만 차단한다(하위 서비스의 `X-User-Id` 무검증 신뢰 → backend `TODO 1.8`).
+- **api-gateway**: 외부 진입점이라 **의도적으로 `0.0.0.0` 유지**(스크립트 주석). 여기를 `127.0.0.1`로 묶으면 외부 접근 불가.
+- **config**: 아직 `0.0.0.0`. config-bus 워크플로우가 `CONFIG_SERVER_URL`로 busrefresh를 호출하므로, 그 값이
+  localhost 기반인지 확인 후 전환한다(루트 `TODO.md` "보안 · 네트워크 노출").
+
 ## 단계별 흐름 (공통 뼈대, config 기준)
 
 1. **사전 검증**: `CONFIG_REPO_URI`/`VAULT_ROLE_ID`/`VAULT_SECRET_ID` 등 필수 환경변수 확인(서비스마다

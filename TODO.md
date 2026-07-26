@@ -67,11 +67,15 @@ docs에 남는다). 새 "확인 필요"·예정 작업은 개별 문서가 아�
   `127.0.0.1:${host_port}:${CONTAINER_PORT}`로 변경(user/market/chat/websocket-gateway). 인터서비스는
   Docker 네트워크 + Eureka(컨테이너 `hostname:CONTAINER_PORT` 등록, host_port는 Eureka가 모름)로 통신하므로
   라우팅 영향 없고, 배포 스크립트 헬스체크(`curl localhost:${host_port}`)도 그대로 동작. 외부 직접 접근만 차단.
-- [ ] **(Layer 1 후속) validated-recreate 서비스도 host-local 바인딩.**
-  `deploy-oauth2-authorization-server-*`·`deploy-oauth2-client-*`(게이트웨이 경유로만 접근)는 `127.0.0.1`
-  바인딩으로 전환 가능. `config`(8888)·`eureka`(8761)는 config-bus 워크플로우의 `CONFIG_SERVER_URL`/runner
-  접근 경로가 host localhost인지 확인 후 결정. **api-gateway(8000)는 외부 진입점이라 `0.0.0.0` 유지**(바인딩
-  시 외부 접근 불가).
+- [x] **(Layer 1) validated-recreate — eureka·oauth2-as·oauth2-client host-local 바인딩.**
+  `deploy-eureka-server-*`·`deploy-oauth2-authorization-server-*`·`deploy-oauth2-client-*`의 앱 포트를
+  `127.0.0.1` 바인딩으로 전환. 인터서비스는 Docker 네트워크/Eureka로, 헬스체크·ready는 `localhost`로 접근하므로
+  영향 없음(eureka 대시보드 등 호스트 외부 직접 접근만 차단). **api-gateway(8000)는 외부 진입점이라
+  의도적으로 `0.0.0.0` 유지**(스크립트에 주석). outbox-poller(safe-recreate)는 게시 포트 없음.
+- [ ] **(Layer 1 잔여) config(8888) host-local 바인딩.** config-bus 워크플로우가 self-hosted runner(호스트)에서
+  `${CONFIG_SERVER_URL}/actuator/busrefresh`를 curl한다. `CONFIG_SERVER_URL`(GitHub 변수)이 `http://localhost:8888`
+  (또는 `127.0.0.1`)이면 `127.0.0.1` 바인딩으로 전환해도 안전하나, 호스트 IP/DNS면 busrefresh가 깨진다. 값 확인 후 전환
+  (서비스는 Docker 네트워크 `configserver:http://crypto-spring-cloud-config:8888`로 접근하므로 호스트 포트 소비자는 이 워크플로우뿐).
 - [ ] **(Layer 0) 호스트/네트워크 방화벽으로 서비스 포트 차단.** 현재 클라우드 미사용이라 Security Group이
   없다. 운영 호스트를 외부에 노출하거나 클라우드로 이전할 때, 게이트웨이 포트(8000)만 외부 개방하고 나머지
   서비스 포트는 방화벽(SG/`ufw`/`iptables`)으로 차단한다. Layer 1(포트 비공개)과 이중 방어.

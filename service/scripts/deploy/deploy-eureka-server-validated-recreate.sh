@@ -181,7 +181,7 @@ run_eureka_server_container() {
   local image="$3"
 
   local -a docker_port_options=(
-    -p "${host_port}:${CONTAINER_PORT}"
+    -p "127.0.0.1:${host_port}:${CONTAINER_PORT}"
   )
 
   # Candidate와 운영 컨테이너는 동시에 실행될 수 있다.
