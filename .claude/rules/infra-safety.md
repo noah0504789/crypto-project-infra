@@ -14,10 +14,12 @@
 
 ## 부트스트랩 순서·수동 단계
 - 네트워크/볼륨은 compose가 만들지 않는다(external). 없으면 먼저 생성해야 한다.
-- 다음은 compose 파일에 자동화되어 있지 않다(수동/외부 단계, `TODO.md` 참고):
-  MySQL replica 복제 연결(`CHANGE REPLICATION SOURCE`/`START REPLICA`), Redis 클러스터 생성
-  (`redis-cli --cluster create`), Vault `operator init`/`unseal`.
-- 이 절차를 "자동으로 될 것"이라고 단정하지 말고, 확인되지 않았으면 `확인 필요`로 표시한다.
+- MySQL replica 복제 연결(`CHANGE REPLICATION SOURCE`/`START REPLICA`)과 Redis 클러스터 생성
+  (`redis-cli --cluster create`)은 compose의 **init 서비스로 자동화**되어 있다
+  (`mysql-replica-init`/`redis-cluster-init`, 각각 idempotent — 이미 구성됐으면 skip). 상세는 `docs/INFRA.md`.
+- **여전히 수동인 단계**: Vault `operator init`/`unseal`. init/unseal 자동화는 없다.
+- 위 init 서비스는 최초 구성·정상 시 skip만 하고 **하드 크래시로 깨진 복제/클러스터를 자동 복구하지는 않는다**
+  (→ `docs/INFRA.md` "한계", `TODO.md`). 자동 복구까지 될 것이라고 단정하지 말고, 확인되지 않았으면 `확인 필요`로 표시한다.
 
 ## 시크릿·설정 파일
 - `infra/mongo/mongo-keyfile`, `infra/.env`는 `.gitignore` 대상이다 — 값을 출력하거나 커밋하지 않는다.
