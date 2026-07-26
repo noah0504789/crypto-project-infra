@@ -14,7 +14,7 @@
   봐서는 깨졌는지 알 수 없다.
 - `.deploy/`는 스크립트가 읽고 쓰는 런타임 상태(`*.active-slot` / `*.current-image`, git 미추적).
   사람이 직접 편집하는 파일이 아니다.
-- **CD 배포가 `docker compose`를 쓰는 건 outbox-poller(safe-recreate)뿐.** 나머지는 스크립트가
-  `docker run`으로 직접 띄운다 — compose의 config/eureka/api-gateway 정의와 `*_IMAGE_TAG` 변수는
-  CD에서 안 쓰이고 스크립트 값과 중복된다(드리프트 주의). market-service는 compose 미등록(→ 루트 `TODO.md`).
+- **CD 배포가 `docker compose`를 쓰는 건 safe-recreate(outbox-poller·market-detection)뿐.** 나머지
+  (blue/green·validated-recreate)는 스크립트가 `docker run`으로 직접 띄운다 — compose의 blue/green·
+  validated-recreate 서비스 정의와 `*_IMAGE_TAG` 변수는 CD에서 안 쓰이고 스크립트 값과 중복된다(드리프트 주의).
 - 스크립트 직접 실행 = 배포. 사용자의 명시적 요청 없이 실행하지 않는다.

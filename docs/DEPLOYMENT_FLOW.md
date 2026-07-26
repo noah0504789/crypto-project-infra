@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | Blue/Green | user-service, market-service, websocket-gateway, chat-service, notification-service | `bluegreen-core.sh` + `deploy-<service>-bluegreen.sh` | [DEPLOYMENT_FLOW_BLUEGREEN.md](./DEPLOYMENT_FLOW_BLUEGREEN.md) |
 | Validated Recreate | spring-cloud-config, eureka-server, api-gateway, oauth2-authorization-server, oauth2-client | `deploy-<service>-validated-recreate.sh` (서비스별 독립 스크립트, 공통 core 없음) | [DEPLOYMENT_FLOW_VALIDATED_RECREATE.md](./DEPLOYMENT_FLOW_VALIDATED_RECREATE.md) |
-| Safe Recreate | outbox-poller | `deploy-outbox-poller-safe.sh` | [DEPLOYMENT_FLOW_SAFE_RECREATE.md](./DEPLOYMENT_FLOW_SAFE_RECREATE.md) |
+| Safe Recreate | outbox-poller, market-detection | `deploy-<service>-safe.sh` | [DEPLOYMENT_FLOW_SAFE_RECREATE.md](./DEPLOYMENT_FLOW_SAFE_RECREATE.md) |
 
 ## 공통 트리거 경로
 

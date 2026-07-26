@@ -22,8 +22,7 @@
 | crypto-websocket-gateway | 8100 | blue/green | `docker run` | 있음 |
 | crypto-notification-service | 8300 | blue/green | `docker run` | 있음 |
 | crypto-outbox-poller | (인바운드 없음) | safe-recreate | `docker compose` | 있음 |
-
-> market-detection(safe-recreate)은 추가 예정 — 루트 `TODO.md` 참고.
+| crypto-market-detection | (인바운드 없음, actuator 8500 미게시) | safe-recreate | `docker compose` | 있음 |
 
 blue/green 호스트 포트 범위(스크립트 `*_PORT_START`, 스케일만큼 순차 증가, 서로 겹치지 않게 수동 배정):
 chat `8180`/`8280`, user `8190`/`8290`, websocket-gateway `8200`/`8300`, market `8210`/`8310`, notification `8220`/`8320`(blue/green).

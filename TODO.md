@@ -4,23 +4,14 @@
 모아 관리한다. 항목을 처리했으면 결론을 관련 문서에 반영한 뒤 여기서 지운다(완료 기록은 git 히스토리·
 docs에 남는다). 새 "확인 필요"·예정 작업은 개별 문서가 아니라 여기에 추가한다.
 
-## 예정된 서비스 온보딩 (미구현)
-
-- [ ] **market-detection 서비스 추가.** 전략: **Safe Recreate**. 스크립트, `cd.yml` case, compose 등록
-  모두 아직 없다. `outbox-poller` 패턴(compose 등록 + `docker compose up -d --force-recreate` 기반
-  스크립트, HTTP 헬스체크 없음)을 템플릿으로 참고.
-
-세 서비스가 추가되면 `CLAUDE.md` 디렉토리 표, `docs/SERVICE.md`, `docs/DEPLOYMENT_FLOW.md`(전략 비교 표)와
-`DEPLOYMENT_FLOW_BLUEGREEN.md`/`_SAFE_RECREATE.md`의 대상 서비스 목록, `.claude/rules/deploy-safety.md`를
-함께 갱신한다.
-
 ## 서비스 스택 (`service/`)
 
-- [ ] **compose 정의 ↔ 스크립트 파라미터 드리프트.** config/eureka/api-gateway/oauth2-*/user/chat/
-  websocket 서비스는 스크립트가 `docker run`으로 배포하는데, `service/docker-compose.yml`에도 같은
-  서비스가 정의되어 포트·`mem_limit`·`JAVA_TOOL_OPTIONS`가 중복된다. CD 배포 경로는 이 compose 정의를
-  쓰지 않으므로(outbox-poller 제외) 한쪽만 바꾸면 값이 어긋난다. compose 정의를 로컬/수동 용도로
-  유지할지, single-source로 정리할지 결정 필요. (출처: `docs/SERVICE.md`)
+- [ ] **compose 정의 ↔ 스크립트 파라미터 드리프트.** blue/green·validated-recreate 서비스
+  (config/eureka/api-gateway/oauth2-*/user/chat/websocket/market/notification)는 스크립트가 `docker run`으로
+  배포하는데, `service/docker-compose.yml`에도 같은 서비스가 정의되어 포트·`mem_limit`·`JAVA_TOOL_OPTIONS`가
+  중복된다. CD 배포 경로는 이 compose 정의를 쓰지 않으므로(safe-recreate=outbox-poller·market-detection만
+  compose 사용) 한쪽만 바꾸면 값이 어긋난다. compose 정의를 로컬/수동 용도로 유지할지, single-source로
+  정리할지 결정 필요. (출처: `docs/SERVICE.md`)
 
 ## 인프라 스택 (`infra/`)
 

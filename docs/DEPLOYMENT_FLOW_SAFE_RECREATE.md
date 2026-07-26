@@ -1,10 +1,17 @@
-# 배포 흐름 — Safe Recreate (`deploy-outbox-poller-safe.sh`)
+# 배포 흐름 — Safe Recreate (`deploy-<service>-safe.sh`)
 
 전체 개요와 다른 전략은 [DEPLOYMENT_FLOW.md](./DEPLOYMENT_FLOW.md) 참고.
 
-대상: `crypto-outbox-poller` 한 개뿐이다. 다른 두 전략과 달리 `docker run`이 아니라
-**`service/docker-compose.yml`의 compose 서비스를 그대로 재기동**하며, HTTP 헬스체크가 전혀 없다 —
-컨테이너 상태와 로그 문자열만으로 성공/실패를 판단한다.
+대상: `crypto-outbox-poller`, `crypto-market-detection`. 둘 다 외부 인바운드 트래픽을 받지 않는
+백그라운드 워크로드(Kafka 컨슈머/스트림, 외부 WS 수집)라 무중단이 불필요하다. 다른 두 전략과 달리
+`docker run`이 아니라 **`service/docker-compose.yml`의 compose 서비스를 그대로 재기동**하며, HTTP
+헬스체크가 전혀 없다 — 컨테이너 상태와 로그 문자열만으로 성공/실패를 판단한다. 아래 단계 설명은
+outbox-poller 기준이며, market-detection도 동일한 스크립트 구조다(서비스명·env prefix·`.current-image`
+파일명만 다름: `MARKET_DETECTION_IMAGE(_TAG)`, `.deploy/market-detection.current-image`).
+
+> **market-detection 참고**: `config.name`에 `monitoring`이 있어 actuator/probes 자체는 뜨지만
+> (`server.port 8500`), safe-recreate 스크립트는 HTTP 헬스를 폴링하지 않고 outbox-poller와 동일하게
+> 컨테이너 `State.Status` + 시작 로그 패턴으로만 판단한다. 8500은 호스트에 게시하지 않는다(인바운드 없음).
 
 **왜 HTTP 헬스체크가 없나 (backend 확인 완료)**: outbox-poller의 주 워크로드는 Kafka 스트림 컨슈머다.
 웹 서버(port 9200, DLQ 제어 REST `/dlq-poller/start,stop`)는 있지만 **actuator 헬스 프로브가 설정돼

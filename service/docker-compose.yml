@@ -103,6 +103,14 @@ services:
     mem_limit: 768m
     networks: [crypto-project-network]
 
+  crypto-market-detection:
+    image: ${MARKET_DETECTION_IMAGE:-${DOCKERHUB_USERNAME}/crypto-market-detection:${MARKET_DETECTION_IMAGE_TAG:-latest}}
+    container_name: crypto-market-detection
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m"
+    mem_limit: 768m
+    networks: [crypto-project-network]
+
 networks:
   crypto-project-network:
     external: true
