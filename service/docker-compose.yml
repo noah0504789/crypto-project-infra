@@ -77,6 +77,15 @@ services:
     mem_limit: 1024m
     networks: [crypto-project-network]
 
+  crypto-notification-service:
+    image: ${DOCKERHUB_USERNAME}/crypto-notification-service:${NOTIFICATION_SERVICE_IMAGE_TAG:-latest}
+    container_name: crypto-notification-service
+    ports: ["8300:8300"]
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m"
+    mem_limit: 512m
+    networks: [crypto-project-network]
+
   crypto-outbox-poller:
     image: ${OUTBOX_POLLER_IMAGE:-${DOCKERHUB_USERNAME}/crypto-outbox-poller:${OUTBOX_POLLER_IMAGE_TAG:-latest}}
     container_name: crypto-outbox-poller

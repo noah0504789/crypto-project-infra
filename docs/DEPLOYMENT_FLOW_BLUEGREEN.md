@@ -3,8 +3,8 @@
 전체 개요와 다른 전략은 [DEPLOYMENT_FLOW.md](./DEPLOYMENT_FLOW.md) 참고.
 
 대상 서비스: `crypto-user-service`, `crypto-market-service`, `crypto-websocket-gateway`,
-`crypto-chat-service`. 각 서비스는 `deploy-<service>-bluegreen.sh` wrapper에서 포트/헬스체크
-경로 등 파라미터만 export하고 `bluegreen-core.sh`를 그대로 실행(`exec`)한다.
+`crypto-chat-service`, `crypto-notification-service`. 각 서비스는 `deploy-<service>-bluegreen.sh`
+wrapper에서 포트/헬스체크 경로 등 파라미터만 export하고 `bluegreen-core.sh`를 그대로 실행(`exec`)한다.
 
 ## 파라미터 (wrapper가 고정 export하는 값)
 
