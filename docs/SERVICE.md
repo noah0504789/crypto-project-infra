@@ -17,7 +17,7 @@
 | crypto-oauth2-authorization-server | 9000 | validated-recreate | `docker run` | 있음 |
 | crypto-oauth2-client | 8900 | validated-recreate | `docker run` | 있음 |
 | crypto-user-service | 8090 | blue/green | `docker run` | 있음 |
-| crypto-market-service | 8200 | blue/green | `docker run` | **없음**(→ 루트 `TODO.md`) |
+| crypto-market-service | 8200 | blue/green | `docker run` | 있음 |
 | crypto-chat-service | 8080 | blue/green (scale=1 고정) | `docker run` | 있음 |
 | crypto-websocket-gateway | 8100 | blue/green | `docker run` | 있음 |
 | crypto-notification-service | 8300 | blue/green | `docker run` | 있음 |

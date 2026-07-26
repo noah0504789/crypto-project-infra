@@ -68,6 +68,15 @@ services:
     mem_limit: 512m
     networks: [crypto-project-network]
 
+  crypto-market-service:
+    image: ${DOCKERHUB_USERNAME}/crypto-market-service:${MARKET_SERVICE_IMAGE_TAG:-latest}
+    container_name: crypto-market-service
+    ports: ["8200:8200"]
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m"
+    mem_limit: 512m
+    networks: [crypto-project-network]
+
   crypto-chat-service:
     image: ${DOCKERHUB_USERNAME}/crypto-chat-service:${CHAT_SERVICE_IMAGE_TAG:-latest}
     container_name: crypto-chat-service

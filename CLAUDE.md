@@ -23,7 +23,7 @@ crypto-project 인프라 저장소. `crypto-project-backend`가 GitHub Actions s
 | --- | --- |
 | `infra/` | MySQL(master/replica), Redis(6-node), MongoDB(replica set), Kafka(2-broker+KRaft), Vault, adminer/redis-insight/mongo-express. 로컬 개발·운영 공용 인프라 compose. 상세는 `docs/INFRA.md`. **네트워크·볼륨이 external이라 최초 1회 수동 생성 필요, 데이터 볼륨 삭제는 영구 손실** — `.claude/rules/infra-safety.md` 참고. |
 | `monitoring/` | Prometheus/Grafana + DB별 exporter(mysqld/redis/mongodb/kafka). 메트릭 전용(로그·트레이스 스택 제거됨). 상세는 `docs/MONITORING.md`. |
-| `service/docker-compose.yml` | 백엔드 서비스 compose 정의. **CD 배포가 compose를 실제로 쓰는 건 outbox-poller(safe-recreate)뿐** — 나머지는 스크립트가 `docker run`으로 직접 띄운다(compose 정의는 로컬/수동 용도, 스크립트 값과 중복되어 드리프트 주의). market-service는 compose 미등록. 구조 상세는 `docs/SERVICE.md`. |
+| `service/docker-compose.yml` | 백엔드 서비스 compose 정의. **CD 배포가 compose를 실제로 쓰는 건 outbox-poller(safe-recreate)뿐** — 나머지는 스크립트가 `docker run`으로 직접 띄운다(compose 정의는 로컬/수동 용도, 스크립트 값과 중복되어 드리프트 주의). 구조 상세는 `docs/SERVICE.md`. |
 | `service/scripts/deploy/` | 배포 스크립트. 전략 3종(Blue/Green, Validated Recreate, Safe Recreate)이 섞여 있다. 서비스 구조는 `docs/SERVICE.md`, 배포 흐름은 `docs/DEPLOYMENT_FLOW.md`(개요)부터. |
 | `service/.deploy/` | **배포 런타임 상태**(git 미추적, `.gitignore`). `*.active-slot`(현재 blue/green), `*.current-image`(rollback용 이미지 다이제스트). 스크립트가 쓰고 읽는 파일이며 사람이 직접 편집하는 파일이 아니다. |
 | `service/certs/`, `infra/mongo/mongo-keyfile` 등 | 인증서/키파일. `.gitignore`로 제외, 로컬에만 존재. |

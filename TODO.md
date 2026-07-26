@@ -6,9 +6,6 @@ docs에 남는다). 새 "확인 필요"·예정 작업은 개별 문서가 아�
 
 ## 예정된 서비스 온보딩 (미구현)
 
-- [ ] **market-service compose 등록.** `deploy-market-service-bluegreen.sh`와 `cd.yml`의
-  `crypto-market-service` case는 이미 있지만 `service/docker-compose.yml`에는 정의가 없다.
-  전략: **Blue/Green**. compose 등록만 추가하면 된다.
 - [ ] **market-detection 서비스 추가.** 전략: **Safe Recreate**. 스크립트, `cd.yml` case, compose 등록
   모두 아직 없다. `outbox-poller` 패턴(compose 등록 + `docker compose up -d --force-recreate` 기반
   스크립트, HTTP 헬스체크 없음)을 템플릿으로 참고.
