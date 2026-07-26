@@ -56,6 +56,26 @@ docs에 남는다). 새 "확인 필요"·예정 작업은 개별 문서가 아�
   막지 않는다. self-hosted runner가 물리적으로 job을 하나씩만 처리하는지(러너 개수, `runs-on` 라벨 매칭)는
   확인 못함. 세 전략 모두 동일하게 영향받는다. (출처: `docs/DEPLOYMENT_FLOW.md`)
 
+## 보안 · 네트워크 노출 (X-User-Id 신뢰 모델)
+
+배경: 하위 서비스는 게이트웨이가 넣는 `X-User-Id`를 검증 없이 신뢰한다(backend `TODO 1.8`). 게이트웨이를
+거치지 않고 서비스에 직접 요청하며 `X-User-Id`를 위조하면 타인 데이터 접근이 가능하므로, 서비스 앱 포트가
+외부에 노출되면 안 된다. (게이트웨이 경유 스푸핑 차단(Layer 2)은 backend 게이트웨이에서 처리 — 클라이언트가
+보낸 `X-User-Id`/`X-From`을 입구에서 제거.)
+
+- [x] **(Layer 1) blue/green 서비스 앱 포트 host-local 바인딩.** `bluegreen-core.sh`의 `-p`를
+  `127.0.0.1:${host_port}:${CONTAINER_PORT}`로 변경(user/market/chat/websocket-gateway). 인터서비스는
+  Docker 네트워크 + Eureka(컨테이너 `hostname:CONTAINER_PORT` 등록, host_port는 Eureka가 모름)로 통신하므로
+  라우팅 영향 없고, 배포 스크립트 헬스체크(`curl localhost:${host_port}`)도 그대로 동작. 외부 직접 접근만 차단.
+- [ ] **(Layer 1 후속) validated-recreate 서비스도 host-local 바인딩.**
+  `deploy-oauth2-authorization-server-*`·`deploy-oauth2-client-*`(게이트웨이 경유로만 접근)는 `127.0.0.1`
+  바인딩으로 전환 가능. `config`(8888)·`eureka`(8761)는 config-bus 워크플로우의 `CONFIG_SERVER_URL`/runner
+  접근 경로가 host localhost인지 확인 후 결정. **api-gateway(8000)는 외부 진입점이라 `0.0.0.0` 유지**(바인딩
+  시 외부 접근 불가).
+- [ ] **(Layer 0) 호스트/네트워크 방화벽으로 서비스 포트 차단.** 현재 클라우드 미사용이라 Security Group이
+  없다. 운영 호스트를 외부에 노출하거나 클라우드로 이전할 때, 게이트웨이 포트(8000)만 외부 개방하고 나머지
+  서비스 포트는 방화벽(SG/`ufw`/`iptables`)으로 차단한다. Layer 1(포트 비공개)과 이중 방어.
+
 ## 전략별 확인 필요
 
 ### Validated Recreate

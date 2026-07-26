@@ -43,6 +43,10 @@
    - 다음 슬롯에 남아있을 수 있는 이전 컨테이너를 먼저 강제 제거(`docker rm -f`, 실패 무시).
    - `docker run -d`로 scale만큼 컨테이너를 새로 기동. 라벨(`app`, `deploy.strategy=bluegreen`,
      `deploy.slot`, `deploy.index`, `deploy.managed-by=infra-script`)을 붙여 추적 가능하게 함.
+   - **앱 포트는 `127.0.0.1:${host_port}:${CONTAINER_PORT}`로 host-local 바인딩**한다(외부 인터페이스에
+     노출 안 함). 인터서비스 통신은 Docker 네트워크 + Eureka(`hostname:CONTAINER_PORT`)로 이뤄지고,
+     헬스체크는 `localhost:${host_port}`라 그대로 동작한다. 외부에서 게이트웨이를 우회해 서비스에 직접
+     요청하며 `X-User-Id`를 위조하는 것을 막기 위함(backend `TODO 1.8`, 루트 `TODO.md` 보안 절).
    - 기동 실패 시: 다음 슬롯 정리 후 `exit 1`. **활성 슬롯은 그대로 유지**, `.active-slot` 파일도
      안 바뀜 — 배포 실패해도 기존 서비스는 계속 트래픽을 받는다.
 

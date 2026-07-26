@@ -284,7 +284,7 @@ start_slot() {
       --label "deploy.slot=${slot}" \
       --label "deploy.index=${i}" \
       --label "deploy.managed-by=infra-script" \
-      -p "${host_port}:${CONTAINER_PORT}" \
+      -p "127.0.0.1:${host_port}:${CONTAINER_PORT}" \
       -e "JAVA_TOOL_OPTIONS=${JAVA_TOOL_OPTIONS}" \
       "$IMAGE" >/dev/null
   done
