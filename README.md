@@ -50,14 +50,11 @@
 
 ## 4. 문서
 
-| 문서 | 내용 |
-| --- | --- |
-| [CLAUDE.md](CLAUDE.md) | 저장소 개요·작업 규칙 진입점 |
-| [docs/INFRA.md](docs/INFRA.md) | infra 스택(DB·메시징·Vault) 구성·포트·부트스트랩 |
-| [docs/MONITORING.md](docs/MONITORING.md) | Prometheus/Grafana·exporter |
-| [docs/SERVICE.md](docs/SERVICE.md) | 배포 서비스 목록·포트·전략·상태 파일 |
-| [docs/DEPLOYMENT_FLOW.md](docs/DEPLOYMENT_FLOW.md) | 배포 전략 개요(+ 전략별 상세 3종) |
-| [TODO.md](TODO.md) | 확인 필요·예정 작업 단일 관리처 |
-| [.claude/rules/](.claude/rules/) | git-safety · deploy-safety · infra-safety 규칙 |
+전체 문서 지도는 **[docs/README.md](docs/README.md)**(문서 인덱스). 빠른 진입:
+
+- 저장소 규칙 진입점: [CLAUDE.md](CLAUDE.md)
+- 스택 구성: [docs/INFRA.md](docs/INFRA.md) · [docs/MONITORING.md](docs/MONITORING.md) · [docs/SERVICE.md](docs/SERVICE.md)
+- 배포 흐름: [docs/DEPLOYMENT_FLOW.md](docs/DEPLOYMENT_FLOW.md)(+ 전략별 상세 3종)
+- 확인 필요·예정 작업: [TODO.md](TODO.md)
 
 > 최초 기동 순서(external 네트워크/볼륨 생성 → infra 스택 → 서비스)와 수동 단계(Vault init/unseal 등)는 [docs/INFRA.md](docs/INFRA.md) 참고.
