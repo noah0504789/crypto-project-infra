@@ -18,6 +18,11 @@ wrapper에서 포트/헬스체크 경로 등 파라미터만 export하고 `blueg
 | `DEPLOYMENT_BASE_PATH` | `ready`/`not-ready` 액션을 보낼 내부 API prefix | `/api/v1/internal/deployment` |
 | `DRAIN_SECONDS` | 이전 슬롯 정지 전 대기 시간(기본 15초, websocket-gateway만 30초) | — |
 | `TARGET_SCALE` | cd.yml 입력값(`current` 또는 양의 정수) | — |
+| `REMOTE_DEBUG_ENABLED` | `true`면 각 JVM에 JDWP agent를 추가(기본 `false`) | `false` |
+| `REMOTE_DEBUG_PORT_OFFSET` | Blue 디버그 시작 포트 = 컨테이너 서비스 포트 + offset | `20000` |
+| `REMOTE_DEBUG_PORT` | 지정 시 계산값 대신 Blue 첫 인스턴스 포트로 사용 | 미지정 |
+| `REMOTE_DEBUG_SLOT_OFFSET` | Green 시작 포트에 더할 슬롯 간격 | `5` |
+| `REMOTE_DEBUG_SUSPEND` | `y`면 디버거 연결 전까지 JVM 시작 보류 | `n` |
 
 `crypto-chat-service`는 컨트롤러·Kafka 바인더·스케줄러가 한 프로세스에 묶여 있어
 `TARGET_SCALE`이 `current` 또는 `1`이 아니면 스크립트가 즉시 에러로 종료한다(멀티 인스턴스 미지원).
@@ -42,11 +47,16 @@ wrapper에서 포트/헬스체크 경로 등 파라미터만 export하고 `blueg
 4. **다음 슬롯 정리 후 기동** (`remove_slot_containers` → `start_slot`)
    - 다음 슬롯에 남아있을 수 있는 이전 컨테이너를 먼저 강제 제거(`docker rm -f`, 실패 무시).
    - `docker run -d`로 scale만큼 컨테이너를 새로 기동. 라벨(`app`, `deploy.strategy=bluegreen`,
-     `deploy.slot`, `deploy.index`, `deploy.managed-by=infra-script`)을 붙여 추적 가능하게 함.
+     `deploy.slot`, `deploy.index`, `deploy.managed-by=infra-script`, `remote-debug.enabled`,
+     `remote-debug.port`)을 붙여 추적 가능하게 함.
    - **앱 포트는 `127.0.0.1:${host_port}:${CONTAINER_PORT}`로 host-local 바인딩**한다(외부 인터페이스에
      노출 안 함). 인터서비스 통신은 Docker 네트워크 + Eureka(`hostname:CONTAINER_PORT`)로 이뤄지고,
      헬스체크는 `localhost:${host_port}`라 그대로 동작한다. 외부에서 게이트웨이를 우회해 서비스에 직접
      요청하며 `X-User-Id`를 위조하는 것을 막기 위함(backend `TODO 1.8`, 루트 `TODO.md` 보안 절).
+   - 원격 디버그를 활성화하면 각 컨테이너의 `JAVA_TOOL_OPTIONS`에
+     `-agentlib:jdwp=transport=dt_socket,server=y,suspend=...,address=*:<debug-port>`를 추가하고,
+     호스트에는 `127.0.0.1:<debug-port>:<debug-port>`로만 바인딩한다. 같은 호스트에서 실행하는
+     디버거는 SSH 터널 없이 `localhost:<debug-port>`로 연결할 수 있다.
    - 기동 실패 시: 다음 슬롯 정리 후 `exit 1`. **활성 슬롯은 그대로 유지**, `.active-slot` 파일도
      안 바뀜 — 배포 실패해도 기존 서비스는 계속 트래픽을 받는다.
 
@@ -77,6 +87,32 @@ wrapper에서 포트/헬스체크 경로 등 파라미터만 export하고 `blueg
 9. **활성 슬롯 갱신**: `.deploy/${SERVICE_NAME}.active-slot`에 `next_slot` 기록.
 
 10. **결과 출력**: 새 슬롯 라벨 기준으로 `docker ps` 테이블 출력.
+
+## 원격 디버그 (JDWP)
+
+validated-recreate와 동일하게 서비스의 컨테이너 포트에 `REMOTE_DEBUG_PORT_OFFSET`을 더해
+Blue 첫 인스턴스의 디버그 포트를 계산한다. Blue/Green은 두 슬롯과 여러 인스턴스가 동시에
+실행될 수 있으므로 Green에는 `REMOTE_DEBUG_SLOT_OFFSET`을 추가하고, 각 슬롯 안에서는 scale
+인덱스만큼 순차 증가시킨다. `REMOTE_DEBUG_PORT`를 직접 지정하면 그 값을 Blue 첫 인스턴스에
+사용한다. 예를 들어 user-service에 `REMOTE_DEBUG_PORT=5005`를 지정하면 Blue는 `5005...`,
+Green은 `5010...`을 사용한다.
+
+기본 offset `20000`에서의 예:
+
+| 서비스 | blue debug 포트 시작 | green debug 포트 시작 |
+| --- | ---: | ---: |
+| chat-service | 28080 | 28085 |
+| user-service | 28090 | 28095 |
+| websocket-gateway | 28100 | 28105 |
+| market-service | 28200 | 28205 |
+| notification-service | 28300 | 28305 |
+
+scale이 3이면 시작 포트부터 3개를 순차 사용한다. 기본 슬롯 간격이 5이므로 scale이 5를
+초과하면 Blue/Green 범위가 겹쳐 배포 전에 차단된다. 스크립트는 활성화 시 포트 형식·범위,
+Blue/Green debug 범위 중첩 및 앱 포트 범위와의 충돌을 이미지 pull 전에 검증한다.
+
+JDWP는 인증 기능이 없으므로 호스트의 외부 인터페이스에는 공개하지 않는다. IntelliJ와 서비스
+호스트가 다를 때만 SSH 터널을 사용한다.
 
 ## 실패 시 동작 요약
 

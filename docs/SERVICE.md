@@ -70,7 +70,8 @@ chat `8180`/`8280`, user `8190`/`8290`, websocket-gateway `8200`/`8300`, market 
 | `DOCKERHUB_USERNAME` | 이미지 레포 접두사(`<user>/crypto-...`) |
 | `DEPLOY_TOKEN` | `/internal/deployment/{ready,not-ready}` 호출용 `X-Deploy-Token` 헤더 |
 | `VAULT_ROLE_ID` / `VAULT_SECRET_ID` | Spring Cloud Config가 Vault AppRole로 시크릿 로드 |
-| `REMOTE_DEBUG_ENABLED` / `REMOTE_DEBUG_PORT_OFFSET` | validated-recreate 원격 디버그(JDWP) 옵션 |
+| `REMOTE_DEBUG_ENABLED` / `REMOTE_DEBUG_PORT_OFFSET` | validated-recreate·blue/green 원격 디버그(JDWP) 옵션 |
+| `REMOTE_DEBUG_SLOT_OFFSET` | blue/green의 Green 디버그 포트 슬롯 간격(기본 5) |
 
 - `DEPLOY_TOKEN` 필수 여부는 스크립트마다 다르다(→ `docs/DEPLOYMENT_FLOW_VALIDATED_RECREATE.md`, `TODO.md`).
 - 값은 `.gitignore` 대상 — 출력·커밋 금지(→ `.claude/rules/git-safety.md`).
