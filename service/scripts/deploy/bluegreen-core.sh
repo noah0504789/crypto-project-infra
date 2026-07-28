@@ -18,6 +18,11 @@ HEALTH_PATH="${HEALTH_PATH:-/api/v1/actuator/health}"
 DEPLOYMENT_BASE_PATH="${DEPLOYMENT_BASE_PATH:-/api/v1/internal/deployment}"
 DEPLOY_TOKEN="${DEPLOY_TOKEN:-}"
 DRAIN_SECONDS="${DRAIN_SECONDS:-15}"
+REMOTE_DEBUG_ENABLED="${REMOTE_DEBUG_ENABLED:-false}"
+REMOTE_DEBUG_PORT_OFFSET="${REMOTE_DEBUG_PORT_OFFSET:-20000}"
+REMOTE_DEBUG_PORT="${REMOTE_DEBUG_PORT:-}"
+REMOTE_DEBUG_SLOT_OFFSET="${REMOTE_DEBUG_SLOT_OFFSET:-5}"
+REMOTE_DEBUG_SUSPEND="${REMOTE_DEBUG_SUSPEND:-n}"
 
 ACTIVE_SLOT_FILE=".deploy/${SERVICE_NAME}.active-slot"
 
@@ -143,6 +148,51 @@ validate_scale() {
   fi
 }
 
+validate_boolean() {
+  local name="$1"
+  local value="$2"
+
+  if [[ "$value" != "true" && "$value" != "false" ]]; then
+    log "ERROR: $name must be either true or false: $value"
+    exit 1
+  fi
+}
+
+validate_debug_suspend() {
+  if [[ "$REMOTE_DEBUG_SUSPEND" != "y" && "$REMOTE_DEBUG_SUSPEND" != "n" ]]; then
+    log "ERROR: REMOTE_DEBUG_SUSPEND must be either y or n: $REMOTE_DEBUG_SUSPEND"
+    exit 1
+  fi
+}
+
+validate_port() {
+  local name="$1"
+  local port="$2"
+
+  if ! [[ "$port" =~ ^[0-9]+$ ]] || [[ "$port" -lt 1 || "$port" -gt 65535 ]]; then
+    log "ERROR: invalid $name: $port"
+    exit 1
+  fi
+}
+
+debug_port_for_slot_index() {
+  local slot="$1"
+  local index="$2"
+  local debug_base_port
+
+  if [[ -n "$REMOTE_DEBUG_PORT" ]]; then
+    debug_base_port="$REMOTE_DEBUG_PORT"
+  else
+    debug_base_port="$((CONTAINER_PORT + REMOTE_DEBUG_PORT_OFFSET))"
+  fi
+
+  if [[ "$slot" == "green" ]]; then
+    debug_base_port="$((debug_base_port + REMOTE_DEBUG_SLOT_OFFSET))"
+  fi
+
+  echo "$((debug_base_port + index - 1))"
+}
+
 validate_port_ranges() {
   local scale="$1"
   local blue_start="$BLUE_PORT_START"
@@ -159,6 +209,75 @@ validate_port_ranges() {
 
   log "blue port range : ${blue_start}-${blue_end}"
   log "green port range: ${green_start}-${green_end}"
+}
+
+validate_debug_port_ranges() {
+  local scale="$1"
+
+  if [[ "$REMOTE_DEBUG_ENABLED" != "true" ]]; then
+    return 0
+  fi
+
+  if [[ -z "$REMOTE_DEBUG_PORT" ]] && ! [[ "$REMOTE_DEBUG_PORT_OFFSET" =~ ^[0-9]+$ ]]; then
+    log "ERROR: REMOTE_DEBUG_PORT_OFFSET must be a non-negative integer: $REMOTE_DEBUG_PORT_OFFSET"
+    exit 1
+  fi
+
+  if ! [[ "$REMOTE_DEBUG_SLOT_OFFSET" =~ ^[0-9]+$ ]] ||
+     [[ "$REMOTE_DEBUG_SLOT_OFFSET" -lt 1 ]]; then
+    log "ERROR: REMOTE_DEBUG_SLOT_OFFSET must be a positive integer: $REMOTE_DEBUG_SLOT_OFFSET"
+    exit 1
+  fi
+
+  validate_debug_suspend
+
+  if [[ -n "$REMOTE_DEBUG_PORT" ]]; then
+    validate_port "REMOTE_DEBUG_PORT" "$REMOTE_DEBUG_PORT"
+  fi
+
+  local blue_debug_start
+  local green_debug_start
+  local blue_debug_end
+  local green_debug_end
+  local app_min
+  local app_max
+
+  blue_debug_start="$(debug_port_for_slot_index "blue" "1")"
+  green_debug_start="$(debug_port_for_slot_index "green" "1")"
+  blue_debug_end="$((blue_debug_start + scale - 1))"
+  green_debug_end="$((green_debug_start + scale - 1))"
+
+  validate_port "blue debug port start" "$blue_debug_start"
+  validate_port "blue debug port end" "$blue_debug_end"
+  validate_port "green debug port start" "$green_debug_start"
+  validate_port "green debug port end" "$green_debug_end"
+
+  if [[ "$blue_debug_start" -le "$green_debug_end" &&
+        "$green_debug_start" -le "$blue_debug_end" ]]; then
+    log "ERROR: blue/green debug port ranges overlap."
+    log "blue debug : ${blue_debug_start}-${blue_debug_end}"
+    log "green debug: ${green_debug_start}-${green_debug_end}"
+    exit 1
+  fi
+
+  app_min="$BLUE_PORT_START"
+  app_max="$((BLUE_PORT_START + scale - 1))"
+  if [[ "$green_debug_start" -le "$app_max" && "$app_min" -le "$green_debug_end" ||
+        "$blue_debug_start" -le "$app_max" && "$app_min" -le "$blue_debug_end" ]]; then
+    log "ERROR: debug port range overlaps blue application port range."
+    exit 1
+  fi
+
+  app_min="$GREEN_PORT_START"
+  app_max="$((GREEN_PORT_START + scale - 1))"
+  if [[ "$green_debug_start" -le "$app_max" && "$app_min" -le "$green_debug_end" ||
+        "$blue_debug_start" -le "$app_max" && "$app_min" -le "$blue_debug_end" ]]; then
+    log "ERROR: debug port range overlaps green application port range."
+    exit 1
+  fi
+
+  log "blue debug port range : ${blue_debug_start}-${blue_debug_end}"
+  log "green debug port range: ${green_debug_start}-${green_debug_end}"
 }
 
 remove_slot_containers() {
@@ -269,9 +388,30 @@ start_slot() {
   for ((i = 1; i <= scale; i++)); do
     local name
     local host_port
+    local debug_port
+    local effective_java_tool_options
+    local -a debug_args
 
     name="$(container_name "$slot" "$i")"
     host_port="$((port_start + i - 1))"
+    debug_port="$(debug_port_for_slot_index "$slot" "$i")"
+    effective_java_tool_options="$JAVA_TOOL_OPTIONS"
+    debug_args=()
+
+    if [[ "$REMOTE_DEBUG_ENABLED" == "true" ]]; then
+      effective_java_tool_options="${JAVA_TOOL_OPTIONS} -agentlib:jdwp=transport=dt_socket,server=y,suspend=${REMOTE_DEBUG_SUSPEND},address=*:${debug_port}"
+      debug_args+=(
+        --label "remote-debug.enabled=true"
+        --label "remote-debug.port=${debug_port}"
+        -p "127.0.0.1:${debug_port}:${debug_port}"
+      )
+      log "Remote debug enabled for $name: 127.0.0.1:${debug_port}"
+    else
+      debug_args+=(
+        --label "remote-debug.enabled=false"
+        --label "remote-debug.port=${debug_port}"
+      )
+    fi
 
     log "Starting $name with host port $host_port -> container port $CONTAINER_PORT"
 
@@ -285,7 +425,8 @@ start_slot() {
       --label "deploy.index=${i}" \
       --label "deploy.managed-by=infra-script" \
       -p "127.0.0.1:${host_port}:${CONTAINER_PORT}" \
-      -e "JAVA_TOOL_OPTIONS=${JAVA_TOOL_OPTIONS}" \
+      "${debug_args[@]}" \
+      -e "JAVA_TOOL_OPTIONS=${effective_java_tool_options}" \
       "$IMAGE" >/dev/null
   done
 }
@@ -299,6 +440,15 @@ main() {
   log "container port: $CONTAINER_PORT"
   log "health path   : $HEALTH_PATH"
   log "target scale  : $TARGET_SCALE"
+  log "remote debug : $REMOTE_DEBUG_ENABLED"
+  if [[ "$REMOTE_DEBUG_ENABLED" == "true" ]]; then
+    if [[ -n "$REMOTE_DEBUG_PORT" ]]; then
+      log "debug rule   : blue starts at ${REMOTE_DEBUG_PORT}; green adds ${REMOTE_DEBUG_SLOT_OFFSET}"
+    else
+      log "debug rule   : container port + ${REMOTE_DEBUG_PORT_OFFSET}; green adds ${REMOTE_DEBUG_SLOT_OFFSET}"
+    fi
+    log "debug suspend: $REMOTE_DEBUG_SUSPEND"
+  fi
   log "========================================"
 
   local active_slot
@@ -317,7 +467,9 @@ main() {
   target_scale="$(resolve_target_scale "$active_slot")"
 
   validate_scale "$target_scale"
+  validate_boolean "REMOTE_DEBUG_ENABLED" "$REMOTE_DEBUG_ENABLED"
   validate_port_ranges "$target_scale"
+  validate_debug_port_ranges "$target_scale"
 
   next_port_start="$(slot_port_start "$next_slot")"
 
