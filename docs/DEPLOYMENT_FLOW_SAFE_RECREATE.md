@@ -3,11 +3,11 @@
 전체 개요와 다른 전략은 [DEPLOYMENT_FLOW.md](./DEPLOYMENT_FLOW.md) 참고.
 
 대상: `crypto-outbox-poller`, `crypto-market-detection`. 둘 다 외부 인바운드 트래픽을 받지 않는
-백그라운드 워크로드(Kafka 컨슈머/스트림, 외부 WS 수집)라 무중단이 불필요하다. 다른 두 전략과 달리
-`docker run`이 아니라 **`service/docker-compose.yml`의 compose 서비스를 그대로 재기동**하며, HTTP
-헬스체크가 전혀 없다 — 컨테이너 상태와 로그 문자열만으로 성공/실패를 판단한다. 아래 단계 설명은
-outbox-poller 기준이며, market-detection도 동일한 스크립트 구조다(서비스명·env prefix·`.current-image`
-파일명만 다름: `MARKET_DETECTION_IMAGE(_TAG)`, `.deploy/market-detection.current-image`).
+백그라운드 워크로드(Kafka 컨슈머/스트림, 외부 WS 수집)라 무중단이 불필요하다. blue/green·
+validated-recreate와 마찬가지로 **`docker run`으로 컨테이너를 직접 띄우며**(compose 미사용), HTTP
+헬스체크는 전혀 없다 — 컨테이너 상태와 로그 문자열만으로 성공/실패를 판단한다. 아래 단계 설명은
+outbox-poller 기준이며, market-detection도 동일한 스크립트 구조다(서비스명·`IMAGE_REPOSITORY`·
+`.current-image` 파일명만 다름: `.deploy/market-detection.current-image`).
 
 > **market-detection 참고**: `config.name`에 `monitoring`이 있어 actuator/probes 자체는 뜨지만
 > (`server.port 8500`), safe-recreate 스크립트는 HTTP 헬스를 폴링하지 않고 outbox-poller와 동일하게
@@ -24,13 +24,13 @@ liveness 설정 없음. `common-actuator`도 미포함). 그래서 다른 서비
 1. **사전 확인**: `.deploy/outbox-poller.current-image` 파일이 없으면 즉시 `exit 1`(최초 배포 시
    사람이 현재 안정 이미지 다이제스트를 수동으로 적어둬야 함 — config/eureka/api-gateway와 동일한
    부트스트랩 요구).
-2. **새 이미지 pull**: `OUTBOX_POLLER_IMAGE_TAG=$NEW_TAG OUTBOX_POLLER_IMAGE="" docker compose pull`.
-   `docker-compose.yml`의 이미지 필드는
-   `${OUTBOX_POLLER_IMAGE:-${DOCKERHUB_USERNAME}/crypto-outbox-poller:${OUTBOX_POLLER_IMAGE_TAG:-latest}}`
-   — `OUTBOX_POLLER_IMAGE`(전체 이미지 참조, rollback에서 다이제스트 고정용)가 태그 조합보다 우선한다.
-3. **재기동**: `docker compose up -d --force-recreate crypto-outbox-poller`. compose가 기존
-   컨테이너를 먼저 내리고 새로 띄우므로, blue/green과 달리 **이 구간은 짧게라도 poller가 완전히
-   내려가는 다운타임이 있다.**
+2. **새 이미지 pull**: `docker pull "$NEW_IMAGE"`. 새 이미지는 `${IMAGE_REPOSITORY}:${NEW_TAG}`로
+   조합한다(`NEW_TAG`는 스크립트 인자 `$1`, 기본 `latest`). rollback은 태그가 아니라
+   `.current-image`에 저장된 전체 이미지 참조(다이제스트 고정)를 그대로 쓴다.
+3. **재기동**: 기존 컨테이너를 `docker rm -f`로 내린 뒤(`remove_container`) `docker run -d`로 새로
+   띄운다(`run_container`: `--name`=서비스명, `--network crypto-project-network`, `--memory`,
+   `-e JAVA_TOOL_OPTIONS`). 기존 컨테이너를 먼저 내리고 새로 띄우므로, blue/green과 달리 **이 구간은
+   짧게라도 poller가 완전히 내려가는 다운타임이 있다.**
 4. **고정 15초 대기 후 단발성 상태 확인** (폴링 아님): 컨테이너 존재 여부 → `docker inspect`로
    `State.Status`가 `running`인지 → 최근 200줄 로그에서 `Application run failed` /
    `Exception encountered during context initialization` / `OutOfMemoryError` 패턴이 있는지 확인.

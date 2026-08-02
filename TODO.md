@@ -6,12 +6,11 @@ docs에 남는다). 새 "확인 필요"·예정 작업은 개별 문서가 아�
 
 ## 서비스 스택 (`service/`)
 
-- [ ] **compose 정의 ↔ 스크립트 파라미터 드리프트.** blue/green·validated-recreate 서비스
-  (config/eureka/api-gateway/oauth2-*/user/chat/websocket/market/notification)는 스크립트가 `docker run`으로
-  배포하는데, `service/docker-compose.yml`에도 같은 서비스가 정의되어 포트·`mem_limit`·`JAVA_TOOL_OPTIONS`가
-  중복된다. CD 배포 경로는 이 compose 정의를 쓰지 않으므로(safe-recreate=outbox-poller·market-detection만
-  compose 사용) 한쪽만 바꾸면 값이 어긋난다. compose 정의를 로컬/수동 용도로 유지할지, single-source로
-  정리할지 결정 필요. (출처: `docs/SERVICE.md`)
+- [ ] **compose 정의 ↔ 스크립트 파라미터 드리프트.** 세 전략(blue/green·validated-recreate·
+  safe-recreate) 서비스 전부 스크립트가 `docker run`으로 배포하는데, `service/docker-compose.yml`에도
+  같은 서비스가 정의되어 포트·`mem_limit`·`JAVA_TOOL_OPTIONS`가 중복된다. CD 배포 경로는 이 compose
+  정의를 전혀 쓰지 않으므로 한쪽만 바꾸면 값이 어긋난다. compose 정의를 로컬/수동 용도로 유지할지,
+  single-source로 정리할지 결정 필요. (출처: `docs/SERVICE.md`)
 
 ## 인프라 스택 (`infra/`)
 
