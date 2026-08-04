@@ -41,6 +41,16 @@ crypto-project 인프라 저장소. `crypto-project-backend`가 GitHub Actions s
 | 배포 스크립트(`service/scripts/deploy/`), `service/docker-compose.yml`, `service/.deploy/` 수정 | `.claude/rules/deploy-safety.md` |
 | 인프라·모니터링 스택(`infra/`, `monitoring/`) 조작·수정 (상태 저장, 볼륨 삭제 위험) | `.claude/rules/infra-safety.md` |
 
+## 서브에이전트 (`.claude/agents/`)
+컨텍스트를 분리해야 이득인 작업(중간 읽기량이 크고 결론은 작은 작업)만 위임한다. 안전 규칙의 정본은 `.claude/rules/`이며 에이전트는 그것을 자기 컨텍스트에서 실행할 뿐이다.
+
+| 에이전트 | 언제 | 비고 |
+| --- | --- | --- |
+| `deploy-auditor` | 배포 스크립트·compose·전략 정적 감사, backend `cd.yml`과의 계약 정합성 | 파일만 본다. 스크립트 실행 금지 |
+| `stack-inspector` | 실행 중인 스택의 기동·health·복제/클러스터·드리프트 점검 | 읽기 전용. 컨테이너 생성/삭제/재시작 금지 |
+
+두 에이전트 모두 파일·상태를 수정하지 않는다. 수정은 메인에서 승인을 받고 한다. 백엔드·프론트까지 걸친 요청의 조사 순서는 `../crypto-project-backend/.claude/skills/cross-repo-impact/SKILL.md`를 따른다.
+
 ## 의사소통
 - 한국어로 설명한다. `원인 → 수정 → 영향 범위(backend cd.yml 포함) → 검증 방법(또는 검증 불가 사유)` 순서를 따른다.
 - 코드만으로 확인할 수 없는 부분(예: 실제 러너 환경, Vault 정책, 운영 DNS/방화벽)은 추측하지 않고 `확인 필요`로 표시한다.

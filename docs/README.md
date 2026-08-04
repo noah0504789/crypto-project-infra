@@ -42,3 +42,12 @@
 | [../.claude/rules/git-safety.md](../.claude/rules/git-safety.md) | Git 조작·민감 정보 취급 |
 | [../.claude/rules/deploy-safety.md](../.claude/rules/deploy-safety.md) | 배포 스크립트·compose·`.deploy/` 수정 |
 | [../.claude/rules/infra-safety.md](../.claude/rules/infra-safety.md) | `infra/`·`monitoring/` 스택 조작(상태 저장·볼륨 삭제 위험) |
+
+## 5. 서브에이전트 (.claude/agents/)
+
+컨텍스트를 분리해야 이득인 작업만 위임한다. 규칙 정본은 `.claude/rules/`이고 에이전트는 그것을 별도 컨텍스트에서 실행한다.
+
+| 에이전트 | 언제 | 제약 |
+|---|---|---|
+| [deploy-auditor](../.claude/agents/deploy-auditor.md) | 배포 스크립트·compose·전략 정적 감사, backend `cd.yml` 계약 정합성 | 파일만 본다. 스크립트·docker 실행 금지 |
+| [stack-inspector](../.claude/agents/stack-inspector.md) | 실행 중인 스택 기동·health·복제/클러스터·드리프트 점검 | 읽기 전용 docker 명령만. 컨테이너 생성/삭제/재시작·볼륨 조작 금지 |
