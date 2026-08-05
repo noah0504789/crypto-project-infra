@@ -66,6 +66,25 @@ compose 파일에 여러 서비스가 정의돼 있지만, **CD 배포 경로는
   로컬 `.deploy/`에 옛 `crypto-oauth2-*.active-slot`와 현재 `oauth2-*.current-image`가 함께 남아 있을
   수 있다(옛 slot 파일은 현재 미사용 잔재).
 
+## 이미지 태그 정리 (`scripts/cleanup-dockerhub-tags.sh`)
+
+main 머지마다 서비스별 `<sha7>` 태그가 하나씩 쌓인다(실측 40~70개). 정리하되 **현재 배포본을 지우면 안 된다.**
+
+**"최신 N개만 남기기"는 쓸 수 없다.** 빌드는 머지마다, 배포는 가끔이라 현재 배포본이 목록 뒤쪽에 있다 — 실측에서 api-gateway 는 23번째, eureka-server 는 26번째였다. 5개로 자르면 운영 이미지가 사라진다.
+
+보호 기준은 나이가 아니라 **`.deploy/*.current-image` 의 다이제스트**다.
+
+```
+보존: latest + current-image 가 가리키는 배포본 + 최근 N개(기본 10)
+제외: .current-image 가 없는 서비스는 통째로 건너뛴다 (무엇이 떠 있는지 모른다)
+```
+
+`.deploy/` 를 읽어야 하므로 **배포 호스트에서 실행**한다. GitHub Actions 로는 못 옮긴다(그 상태 파일이 저장소에 없다).
+
+자격증명은 배포 스크립트와 같이 `service/.env` 에서 읽는다(git 미추적). `DOCKERHUB_USERNAME` 은 이미 있으므로 **Read/Write/Delete 스코프 PAT 을 `DOCKERHUB_TOKEN` 으로 추가**하면 인자 없이 실행된다. 환경변수로 준 값이 `.env` 보다 우선한다.
+
+기본은 dry-run 이고 `--apply` 를 줘야 실제로 지운다. macOS 기본 bash 3.2 에서도 동작한다(`mapfile` 등 bash 4+ 문법 미사용).
+
 ## 자격증명 · 설정 (`service/.env`, git 미추적)
 
 스크립트/compose가 참조하는 키:

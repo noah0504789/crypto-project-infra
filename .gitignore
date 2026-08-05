@@ -2,6 +2,12 @@
 .env
 *.env
 
+# 에디터 스왑 파일. .env 를 vim 으로 열면 .env.swp 가 생기는데
+# *.env 패턴에 안 걸려 커밋될 수 있다(내용에 시크릿 포함).
+*.swp
+*.swo
+*~
+
 # runtime deploy state
 .deploy/
 **/.deploy/
