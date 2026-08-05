@@ -25,11 +25,50 @@ REMOTE_DEBUG_SLOT_OFFSET="${REMOTE_DEBUG_SLOT_OFFSET:-5}"
 REMOTE_DEBUG_SUSPEND="${REMOTE_DEBUG_SUSPEND:-n}"
 
 ACTIVE_SLOT_FILE=".deploy/${SERVICE_NAME}.active-slot"
+# 현재 배포본 기록. blue/green 은 새 슬롯이 health check 를 통과할 때까지 옛 슬롯을 유지하므로
+# 배포 중 실패는 '전환하지 않음' 으로 처리된다 — 별도 롤백 함수가 없는 이유다.
+# 이 파일은 배포 성공 '후' 를 위한 것이다: 무엇이 떠 있는지 알아야 이미지 태그를 정리할 때
+# 운영본을 보호할 수 있고, 나중에 되돌릴 때 기준점이 된다. 태그(:latest)는 머지마다 옮겨가므로
+# 다이제스트로 고정한다.
+CURRENT_IMAGE_FILE=".deploy/${SERVICE_NAME}.current-image"
 
 mkdir -p .deploy
 
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+}
+
+# 방금 띄운 슬롯의 실제 이미지 다이제스트를 기록한다.
+# validated-recreate 계열은 이미 같은 방식으로 남기는데 blue/green 만 빠져 있어,
+# 무엇이 배포됐는지 파일로 알 방법이 없었다(컨테이너를 지우면 정보가 사라진다).
+# 태그가 없으면(로컬 빌드 등) 기록을 건너뛴다 — 배포 자체를 실패시키지는 않는다.
+record_current_image() {
+  local slot="$1"
+  local container image_id digest
+
+  container="$(docker ps -q --filter "name=^/$(container_name "$slot" 1)$")"
+
+  if [[ -z "$container" ]]; then
+    log "WARN: cannot resolve running container for slot ${slot}; skip recording current image."
+    return 0
+  fi
+
+  image_id="$(docker inspect -f '{{.Image}}' "$container")"
+
+  digest="$(
+    docker image inspect "$image_id" \
+      --format '{{range .RepoDigests}}{{println .}}{{end}}' \
+      | grep "^${IMAGE_REPOSITORY}@sha256:" \
+      | head -n 1
+  )"
+
+  if [[ -z "$digest" ]]; then
+    log "WARN: no repo digest for ${IMAGE_REPOSITORY} (locally built image?); skip recording current image."
+    return 0
+  fi
+
+  echo "$digest" > "$CURRENT_IMAGE_FILE"
+  log "current image recorded: $digest"
 }
 
 container_name() {
@@ -518,6 +557,7 @@ main() {
   fi
 
   echo "$next_slot" > "$ACTIVE_SLOT_FILE"
+  record_current_image "$next_slot"
 
   log "Deploy success."
   log "active slot updated: $next_slot"

@@ -51,11 +51,17 @@ compose 파일에 여러 서비스가 정의돼 있지만, **CD 배포 경로는
 
 - **blue/green** → `.deploy/<전체 서비스명>.active-slot` (예: `crypto-user-service.active-slot`),
   값은 `blue` 또는 `green`.
+- **blue/green** → `.deploy/<전체 서비스명>.current-image` — 배포 성공 후 그 슬롯의 이미지
+  다이제스트를 `bluegreen-core.sh`가 기록한다. **배포 중 롤백용이 아니다**(blue/green 은 새 슬롯이
+  health check 를 통과할 때까지 옛 슬롯을 유지하므로 실패 시 '전환하지 않음'이 곧 롤백이며, 별도
+  rollback 함수가 없다). 이 파일은 **무엇이 떠 있는지 아는 용도**다 — 이미지 태그를 정리할 때
+  운영본을 보호하고, 나중에 되돌릴 기준점이 된다. 태그(`:latest`)는 머지마다 옮겨가 기준이 못 된다.
+  다이제스트를 얻을 수 없으면(로컬 빌드 등) 경고만 남기고 배포는 계속한다.
 - **validated-recreate / safe-recreate** → `.deploy/<짧은 이름>.current-image` (예:
   `api-gateway.current-image`, `spring-cloud-config.current-image`, `outbox-poller.current-image`),
   값은 rollback 대상 이미지 다이제스트. **최초 배포 전에 수동 생성이 필요**하다(스크립트가 없으면
   에러로 안내).
-- 네이밍이 두 갈래(active-slot=전체명, current-image=짧은 이름)라는 점에 유의.
+- 네이밍이 두 갈래다: blue/green 은 전체 서비스명(`crypto-user-service.*`), validated/safe-recreate 는 짧은 이름(`api-gateway.current-image`).
 - oauth2-authorization-server·oauth2-client는 과거 blue/green이었다가 validated-recreate로 전환돼서,
   로컬 `.deploy/`에 옛 `crypto-oauth2-*.active-slot`와 현재 `oauth2-*.current-image`가 함께 남아 있을
   수 있다(옛 slot 파일은 현재 미사용 잔재).
