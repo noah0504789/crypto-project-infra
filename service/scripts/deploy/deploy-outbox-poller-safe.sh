@@ -11,11 +11,14 @@ NEW_IMAGE="${IMAGE_REPOSITORY}:${NEW_TAG}"
 DOCKER_NETWORK="${DOCKER_NETWORK:-crypto-project-network}"
 JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-"-Xms256m -Xmx512m"}"
 MEM_LIMIT="${MEM_LIMIT:-768m}"
+HEALTH_PORT="${HEALTH_PORT:-9200}"
+HEALTH_PATH="${HEALTH_PATH:-/actuator/health/liveness}"
+HEALTHCHECK_IMAGE="${HEALTHCHECK_IMAGE:-curlimages/curl:8.12.1}"
 
 mkdir -p .deploy
 
-if [[ ! -f "$CURRENT_IMAGE_FILE" ]]; then
-  echo "ERROR: $CURRENT_IMAGE_FILE does not exist."
+if [[ ! -s "$CURRENT_IMAGE_FILE" ]]; then
+  echo "ERROR: $CURRENT_IMAGE_FILE does not exist or is empty."
   echo "Create it first with the current stable image digest."
   echo ""
   echo "Example:"
@@ -32,6 +35,7 @@ echo "new image      : $NEW_IMAGE"
 echo "previous image : $PREVIOUS_IMAGE"
 echo "network        : $DOCKER_NETWORK"
 echo "mem limit      : $MEM_LIMIT"
+echo "health url     : http://${SERVICE}:${HEALTH_PORT}${HEALTH_PATH}"
 echo "========================================"
 
 remove_container() {
@@ -60,57 +64,89 @@ run_container() {
     "$image" >/dev/null
 }
 
+wait_for_liveness() {
+  echo "Waiting for liveness: http://${SERVICE}:${HEALTH_PORT}${HEALTH_PATH}"
+
+  docker run --rm \
+    --network "$DOCKER_NETWORK" \
+    "$HEALTHCHECK_IMAGE" \
+    --fail \
+    --silent \
+    --show-error \
+    --retry 29 \
+    --retry-all-errors \
+    --retry-delay 2 \
+    --retry-max-time 90 \
+    --connect-timeout 2 \
+    --max-time 5 \
+    "http://${SERVICE}:${HEALTH_PORT}${HEALTH_PATH}" >/dev/null
+}
+
+has_suspicious_logs() {
+  docker logs --tail=200 "$SERVICE" 2>&1 \
+    | grep -E "Application run failed|Exception encountered during context initialization|OutOfMemoryError" >/dev/null
+}
+
+show_diagnostics() {
+  docker ps -a --filter "name=^/${SERVICE}$" --format "table {{.Names}}\t{{.Status}}" || true
+  docker logs --tail=200 "$SERVICE" || true
+}
+
 rollback() {
   echo "Rolling back to previous image:"
   echo "$PREVIOUS_IMAGE"
 
   remove_container "$SERVICE"
-  run_container "$PREVIOUS_IMAGE"
+  if ! run_container "$PREVIOUS_IMAGE"; then
+    echo "CRITICAL: failed to start rollback container."
+    return 1
+  fi
 
-  echo "Rollback status:"
-  docker ps --filter "name=^/${SERVICE}$" --format "table {{.Names}}\t{{.Status}}" || true
+  if ! wait_for_liveness; then
+    echo "CRITICAL: rollback image failed liveness validation."
+    show_diagnostics
+    return 1
+  fi
 
-  echo "Rollback logs:"
-  docker logs --tail=120 "$SERVICE" || true
+  if has_suspicious_logs; then
+    echo "CRITICAL: rollback image produced suspicious failure logs."
+    show_diagnostics
+    return 1
+  fi
+
+  echo "Rollback completed and passed liveness validation."
 }
 
-echo "Pulling new image..."
+fail_deployment() {
+  local reason="$1"
+
+  echo "ERROR: $reason"
+  show_diagnostics
+
+  if ! rollback; then
+    echo "CRITICAL: deployment and rollback both failed. Manual recovery is required."
+  fi
+
+  exit 1
+}
+
+echo "Pulling deployment images..."
 docker pull "$NEW_IMAGE"
+docker pull "$HEALTHCHECK_IMAGE"
 
 echo "Deploying new image..."
 remove_container "$SERVICE"
 run_container "$NEW_IMAGE"
 
-echo "Checking container status..."
-sleep 15
-
-if ! docker ps -a --format '{{.Names}}' | grep -qx "$SERVICE"; then
-  echo "ERROR: container not found."
-  rollback
-  exit 1
+if ! wait_for_liveness; then
+  fail_deployment "$SERVICE failed liveness validation."
 fi
 
-STATUS="$(docker inspect -f '{{.State.Status}}' "$SERVICE")"
-EXIT_CODE="$(docker inspect -f '{{.State.ExitCode}}' "$SERVICE")"
-
-if [[ "$STATUS" != "running" ]]; then
-  echo "ERROR: $SERVICE is not running. status=$STATUS exitCode=$EXIT_CODE"
-  echo "Recent logs:"
-  docker logs --tail=150 "$SERVICE" || true
-
-  rollback
-  exit 1
+if has_suspicious_logs; then
+  fail_deployment "$SERVICE produced suspicious failure logs."
 fi
 
-if docker logs --tail=200 "$SERVICE" | grep -E "Application run failed|Exception encountered during context initialization|OutOfMemoryError" >/dev/null; then
-  echo "ERROR: suspicious failure log detected."
-  docker logs --tail=200 "$SERVICE" || true
-
-  rollback
-  exit 1
-fi
-
-echo "Deploy looks successful."
+echo "Deploy passed liveness validation."
 
 CURRENT_IMAGE_ID="$(docker inspect -f '{{.Image}}' "$SERVICE")"
 
@@ -127,8 +163,7 @@ if [[ -z "$CURRENT_DIGEST" ]]; then
   echo "Repo digests:"
   docker image inspect "$CURRENT_IMAGE_ID" --format '{{range .RepoDigests}}{{println .}}{{end}}' || true
 
-  rollback
-  exit 1
+  fail_deployment "failed to resolve current image digest."
 fi
 
 echo "$CURRENT_DIGEST" > "$CURRENT_IMAGE_FILE"
