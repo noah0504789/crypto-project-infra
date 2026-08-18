@@ -72,6 +72,10 @@ docs에 남는다). 새 "확인 필요"·예정 작업은 개별 문서가 아�
   (출처: `docs/DEPLOYMENT_FLOW_VALIDATED_RECREATE.md`)
 
 ### Safe Recreate
+- [ ] **upbit-connector 첫 배포 전 `.deploy/upbit-connector.current-image` 초기화 필요.** safe-recreate
+  스크립트는 rollback 대상 이미지를 이 파일에서 읽으며, 없거나 비어 있으면 즉시 `exit 1`이다(스크립트가
+  생성 예시를 출력한다). 러너에서 최초 1회 현재 안정 이미지 다이제스트로 만들어야 첫 배포가 돈다.
+  값의 출처(최초 push된 이미지 다이제스트) 확인 필요. (backend `TODO.md` 4.9와 같은 항목)
 - [ ] **outbox-poller rollback의 재검증 부재.** rollback 후 상태/로그를 출력만 하고 성공 여부를 다시
   판정하지 않는다 — rollback 자체가 실패해도 스크립트는 그대로 `exit 1`로 끝난다. (배경: outbox-poller에
   actuator 헬스 프로브가 없어 forward/rollback 모두 로그 기반이라는 건 확인됨 → `docs/DEPLOYMENT_FLOW_SAFE_RECREATE.md`.

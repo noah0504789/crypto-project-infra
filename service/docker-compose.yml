@@ -111,6 +111,14 @@ services:
     mem_limit: 768m
     networks: [crypto-project-network]
 
+  crypto-upbit-connector:
+    image: ${UPBIT_CONNECTOR_IMAGE:-${DOCKERHUB_USERNAME}/crypto-upbit-connector:${UPBIT_CONNECTOR_IMAGE_TAG:-latest}}
+    container_name: crypto-upbit-connector
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m"
+    mem_limit: 768m
+    networks: [crypto-project-network]
+
 networks:
   crypto-project-network:
     external: true

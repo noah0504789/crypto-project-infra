@@ -23,6 +23,7 @@
 | crypto-notification-service | 8300 | blue/green | `docker run` | 있음 |
 | crypto-outbox-poller | (인바운드 없음) | safe-recreate | `docker run` | 있음(로컬/수동용) |
 | crypto-market-detection | (인바운드 없음, actuator 8500 미게시) | safe-recreate | `docker run` | 있음(로컬/수동용) |
+| crypto-upbit-connector | (인바운드 없음, actuator 8600 미게시) | safe-recreate | `docker run` | 있음(로컬/수동용) |
 
 blue/green 호스트 포트 범위(스크립트 `*_PORT_START`, 스케일만큼 순차 증가, 서로 겹치지 않게 수동 배정):
 chat `8180`/`8280`, user `8190`/`8290`, websocket-gateway `8200`/`8300`, market `8210`/`8310`, notification `8220`/`8320`(blue/green).
@@ -33,7 +34,7 @@ compose 파일에 여러 서비스가 정의돼 있지만, **CD 배포 경로는
 컨테이너를 띄운다. compose 파일을 참조하는 배포 스크립트는 없다.
 
 - blue/green(user/market/chat/websocket-gateway/notification)·validated-recreate(config/eureka/api-gateway/
-  oauth2-*)·safe-recreate(outbox-poller/market-detection) 스크립트 전부 `docker run`이다.
+  oauth2-*)·safe-recreate(outbox-poller/market-detection/upbit-connector) 스크립트 전부 `docker run`이다.
 - 그래서 compose의 이미지 태그 변수(`CONFIG_SERVER_IMAGE_TAG`/`EUREKA_SERVER_IMAGE_TAG`/
   `OUTBOX_POLLER_IMAGE_TAG` 등)는 **CD에서 쓰이지 않는다**(compose 파일 안에서만 참조). CD가 실제로
   쓰는 이미지 태그는 스크립트 인자(`IMAGE_TAG`)로 들어온다.
