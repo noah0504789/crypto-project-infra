@@ -4,6 +4,26 @@
 모아 관리한다. 항목을 처리했으면 결론을 관련 문서에 반영한 뒤 여기서 지운다(완료 기록은 git 히스토리·
 docs에 남는다). 새 "확인 필요"·예정 작업은 개별 문서가 아니라 여기에 추가한다.
 
+## 실행 환경 격리
+
+- [ ] **인프라·모니터링 스택을 애플리케이션 호스트에서 분리해 클라우드로 이전.** 현재 16GB RAM 장비
+  한 대에서 상태 저장 인프라(MySQL·Redis·MongoDB·Kafka·Vault), 모니터링(Prometheus·Grafana·exporter),
+  백엔드 서비스 컨테이너를 모두 실행한다. Chat WebSocket 부하테스트에서 CPU·Memory·Network I/O 경합과
+  호스트 지연이 함께 발생해, 측정값에 애플리케이션 처리 한계와 호스트 자원 한계가 섞였다. k6 부하 발생기는
+  별도 클라우드에서 실행해 테스트 서버의 CPU·Memory를 경쟁하지 않았지만, 외부 네트워크의 왕복 지연·지터·
+  대역폭 오버헤드는 End-to-End latency에 포함됐다. 절대 최대 처리량에는 오차가 있으나 부하 증가에 따른
+  지표 악화가 반복됐고 스케일아웃 구성에서 상대적 개선이 확인되어, 호스트 자원 격리의 필요성은 유효하다.
+  (출처: backend `chat/load-test-results/chatmessage/websocket-gateway/README.md`)
+
+  완료하려면 다음을 함께 결정·검증해야 한다.
+
+  - 인프라와 모니터링을 각각 어디에 배치할지(VM·관리형 서비스 포함) 및 목표 사양·비용·가용성 결정
+  - 애플리케이션 ↔ 인프라 간 사설 네트워크, DNS, 방화벽/Security Group, TLS와 관리 포트 접근 정책 설계
+  - 상태 데이터·볼륨의 백업, 이전, 정합성 검증, 허용 중단시간과 실패 시 rollback 절차 작성
+  - backend Config와 이 저장소의 `.env`·Compose·배포 스크립트에 있는 접속 주소 및 Secret 변경 영향 점검
+  - Prometheus 보존 데이터와 Grafana 대시보드·datasource 이전 여부 및 모니터링 단절 허용 범위 결정
+  - 이전 전후 같은 k6 시나리오를 재실행해 ACK 성공률, Broadcast p95·유실률, 컨테이너 자원 사용량 비교
+
 ## 서비스 스택 (`service/`)
 
 - [ ] **compose 정의 ↔ 스크립트 파라미터 드리프트.** 세 전략(blue/green·validated-recreate·
