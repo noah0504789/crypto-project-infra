@@ -17,7 +17,10 @@ REMOTE_DEBUG_PORT="${REMOTE_DEBUG_PORT:-}"
 REMOTE_DEBUG_SLOT_OFFSET="${REMOTE_DEBUG_SLOT_OFFSET:-5}"
 REMOTE_DEBUG_SUSPEND="${REMOTE_DEBUG_SUSPEND:-n}"
 
-JAVA_TOOL_OPTIONS="-Xms256m -Xmx512m"
+# Netty direct buffer 상한을 명시한다. 없으면 무한 증가해 컨테이너째 OOM-kill 되고 스택이 남지 않는다.
+# 힙을 512m -> 448m 로 줄여 direct 128m 자리를 만든다(총량 불변). 게이트웨이는 프록시라
+# 요청 바디를 힙에 쌓지 않고, 정작 필요한 건 direct buffer 다.
+JAVA_TOOL_OPTIONS="-Xms256m -Xmx448m -XX:MaxDirectMemorySize=128m"
 MEM_LIMIT="768m"
 
 TARGET_SCALE="${TARGET_SCALE:?TARGET_SCALE is required}"

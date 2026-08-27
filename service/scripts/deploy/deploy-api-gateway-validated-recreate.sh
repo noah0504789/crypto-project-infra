@@ -22,7 +22,10 @@ CURL_INSECURE="${CURL_INSECURE:-true}"
 DEPLOYMENT_BASE_PATH="${DEPLOYMENT_BASE_PATH:-/internal/deployment}"
 DEPLOY_TOKEN="${DEPLOY_TOKEN:-}"
 
-BASE_JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-"-Xms256m -Xmx584m -Dreactor.netty.ioWorkerCount=8"}"
+# Netty direct buffer 상한을 명시한다(websocket-gateway 와 같은 이유).
+# 584m 힙 + 힙 외 약 180m(Metaspace·code cache·스레드 스택)이면 768m 한도에 direct 자리가 없다.
+# 힙을 448m 로 줄여 direct 128m 을 확보한다.
+BASE_JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-"-Xms256m -Xmx448m -XX:MaxDirectMemorySize=128m -Dreactor.netty.ioWorkerCount=8"}"
 MEM_LIMIT="${MEM_LIMIT:-768m}"
 
 # 원격 디버깅 설정
