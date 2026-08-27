@@ -62,9 +62,9 @@ services:
     restart: unless-stopped
     networks: [crypto-project-network]
 
-  mysql-primary-exporter:
+  mysql-master-exporter:
     image: prom/mysqld-exporter:latest
-    container_name: mysql-primary-exporter
+    container_name: mysql-master-exporter
     command:
       - "--mysqld.address=mysql-master:3306"
       - "--mysqld.username=${MYSQL_EXPORTER_USER}"

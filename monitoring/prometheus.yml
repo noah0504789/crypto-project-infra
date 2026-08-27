@@ -13,7 +13,7 @@ scrape_configs:
   - job_name: 'mysql'
     static_configs:
       - targets: 
-          - 'mysql-primary-exporter:9104'
+          - 'mysql-master-exporter:9104'
           - 'mysql-replica-exporter:9104'
         labels:
           group: 'infra'
