@@ -1,6 +1,10 @@
 global:
-  scrape_interval: 10s
-  scrape_timeout: 5s
+  # 부하 측정용 해상도. 10s 였을 때 executor 큐·활성 스레드 피크를 놓쳤다 —
+  # VU 80 실행에서 broker 큐가 3,000 까지 찼다 빠지는 구간이 스크레이프 사이에 들어가
+  # 30초 간격 조회로는 최대 190 으로만 보였다(→ backend TODO 5.7).
+  # 저장량이 2배가 되므로 상시 운영에서는 10s 복귀를 검토한다. retention 은 24h.
+  scrape_interval: 5s
+  scrape_timeout: 3s
 
 scrape_configs:
   - job_name: 'node'
