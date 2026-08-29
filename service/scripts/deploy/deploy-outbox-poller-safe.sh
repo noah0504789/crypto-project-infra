@@ -9,7 +9,11 @@ NEW_TAG="${1:-latest}"
 NEW_IMAGE="${IMAGE_REPOSITORY}:${NEW_TAG}"
 
 DOCKER_NETWORK="${DOCKER_NETWORK:-crypto-project-network}"
-JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-"-Xms256m -Xmx512m"}"
+# GC 를 명시한다. MEM_LIMIT 이 1792m 미만이면 JVM 이 server class 가 아니라고 판정해
+# SerialGC 로 떨어진다. CPU 가 12개여도 GC 스레드는 하나뿐이라 full GC 가 초 단위로 멈춘다
+# (실측 major GC 평균 6.5초, 세 서비스 중 최악). 경고가 남지 않아 지표를 보기 전까지
+# 드러나지 않는다. 힙이 500m 남짓이라 region 오버헤드가 있는 G1 보다 ParallelGC 가 맞다.
+JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-"-Xms256m -Xmx512m -XX:+UseParallelGC"}"
 MEM_LIMIT="${MEM_LIMIT:-768m}"
 HEALTH_PORT="${HEALTH_PORT:-9200}"
 HEALTH_PATH="${HEALTH_PATH:-/actuator/health/liveness}"
